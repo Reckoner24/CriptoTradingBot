@@ -1,0 +1,1 @@
+# Archivo vacío inicial para exchange_manager

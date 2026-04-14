@@ -1,0 +1,1299 @@
+{
+  "meta": {
+    "proyecto": "Alpha Supreme HFT Bot — Reconstrucción Total",
+    "version_objetivo": "7.0 Elite",
+    "fecha_creacion": "2026-04-13",
+    "fuentes_auditoria": [
+      "Análisis propio (Claude) — alpha_supreme_roadmap.json",
+      "Análisis externo (Perplexity) — punto_de_vista_perplexity.json"
+    ],
+    "descripcion": "Roadmap maestro de construcción desde cero de un bot de trading algorítmico de nivel institucional. Sintetiza ambos análisis, resuelve contradicciones entre ellos y provee pasos de implementación concretos, testeables y medibles.",
+    "advertencia_capital": "NUNCA operar con capital real antes de completar la Fase 4 (Paper Trading). El bot debe demostrar rentabilidad sostenida en simulación durante mínimo 30 días consecutivos antes de cualquier despliegue real.",
+    "nota_sobre_divergencias": {
+      "apalancamiento": "Perplexity recomienda X3-5 en live vs X8 simulado. Este roadmap adopta X3 máximo en producción inicial y nunca más de X5 hasta tener 6+ meses de track record real.",
+      "ml_vs_llm": "Perplexity favorece ML local (LSTM/DQN) sobre LLMs por costo y latencia. Este roadmap implementa AMBOS: ML para señales de alta frecuencia y LLMs para validación cognitiva de baja frecuencia. Son complementarios, no excluyentes.",
+      "win_rate_78": "El 78%+ de win rate proyectado por Perplexity es optimista. Un win rate del 48-55% con ratio riesgo/beneficio 1:2.5 es más realista y matemáticamente sostenible.",
+      "freqtrade": "Freqtrade es una herramienta excelente para live trading y se incorpora en Fase 4. Sin embargo, el bot personalizado debe mantenerse para estrategias que Freqtrade no soporta nativamente."
+    }
+  },
+
+  "arquitectura_final_objetivo": {
+    "descripcion": "La arquitectura que tendrás al completar el roadmap completo",
+    "capas": {
+      "capa_1_datos": {
+        "nombre": "Data Layer",
+        "componentes": ["WebSocket en tiempo real (ticks, order book, funding rate)", "REST para históricos (OHLCV, open interest, liquidaciones)", "CCXT para multi-exchange (Binance, Bybit, KuCoin)", "Base de datos local SQLite + PostgreSQL para producción"],
+        "archivos": ["core/data_loader.py (refactorizado)", "core/websocket_streamer.py (nuevo)", "core/exchange_manager.py (nuevo)"]
+      },
+      "capa_2_señales": {
+        "nombre": "Signal Layer",
+        "componentes": ["Indicadores estadísticos (Z-Score, ADF, CVD, VWAP, ATR)", "Microestructura de mercado (OBI, taker ratio, liquidaciones)", "Detector de régimen HMM (3 estados)", "Modelo ML supervisado (LSTM/XGBoost) para predicción"],
+        "archivos": ["core/indicators.py (expandido)", "core/order_flow.py (nuevo)", "core/regime_detector.py (nuevo)", "core/ml_predictor.py (nuevo)"]
+      },
+      "capa_3_ia_cognitiva": {
+        "nombre": "AI Cognitive Layer",
+        "componentes": ["Agente Técnico (LLM analiza indicadores)", "Agente de Riesgo (LLM evalúa contexto macro)", "Agente Adversarial (LLM busca razones para rechazar)", "Agente Ejecutor (LLM pondera y decide con score 0-100)"],
+        "archivos": ["core/gemini_engine.py (refactorizado a multi-agente)", "core/agent_orchestrator.py (nuevo)"]
+      },
+      "capa_4_riesgo": {
+        "nombre": "Risk Layer",
+        "componentes": ["Position sizing triple (Kelly + ATR% + Porcentual)", "Circuit breakers multinivel (operación, diario, semanal, global)", "Detector de correlación entre activos", "Risk Guardian centralizado"],
+        "archivos": ["core/risk_guardian.py (nuevo)", "core/position_sizer.py (nuevo)"]
+      },
+      "capa_5_ejecucion": {
+        "nombre": "Execution Layer",
+        "componentes": ["Gestor de órdenes con reintentos automáticos", "Slippage real y simulado", "Trailing stops dinámicos post-entrada", "Salidas parciales escalonadas"],
+        "archivos": ["core/backtest.py (refactorizado)", "core/order_executor.py (nuevo)", "core/exit_manager.py (nuevo)"]
+      },
+      "capa_6_aprendizaje": {
+        "nombre": "Learning Layer",
+        "componentes": ["Memoria de trades (SQLite)", "Análisis de patrones post-trade", "Auto-ajuste de parámetros", "Reentrenamiento periódico del modelo ML"],
+        "archivos": ["core/trade_memory.py (nuevo)", "core/self_improver.py (nuevo)"]
+      },
+      "capa_7_observabilidad": {
+        "nombre": "Observability Layer",
+        "componentes": ["Dashboard en tiempo real (métricas cuantitativas completas)", "Alertas Telegram (circuit breakers, drawdown, errores)", "Logs estructurados JSON", "Exportación de reportes"],
+        "archivos": ["utils/visualizer.py (expandido)", "utils/telegram_alerts.py (nuevo)", "utils/metrics_engine.py (nuevo)"]
+      }
+    }
+  },
+
+  "fases": [
+
+    {
+      "fase_id": "FASE-0",
+      "nombre": "Fundamentos — Entorno y Estructura",
+      "descripcion": "Preparar el entorno de desarrollo profesional antes de escribir una sola línea de código del bot. Un entorno mal configurado contamina todo lo que viene después.",
+      "duracion_estimada": "3-5 días",
+      "milestone": {
+        "id": "M0",
+        "nombre": "Entorno listo y verificado",
+        "criterios_de_exito": [
+          "El entorno virtual corre sin errores",
+          "Todas las librerías instaladas y verificadas con import",
+          "Binance Testnet conectado y devuelve datos reales",
+          "Estructura de carpetas creada",
+          "Git inicializado con .gitignore correcto (sin credenciales)",
+          "Variables de entorno cargando correctamente desde .env"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F0-P1",
+          "titulo": "Instalar Python y gestor de entornos",
+          "descripcion": "Usar Python 3.11+ (no 3.12 aún por compatibilidad con algunas librerías de ML). Usar pyenv para gestionar versiones.",
+          "comandos": [
+            "brew install pyenv (macOS) o apt install pyenv (Linux)",
+            "pyenv install 3.11.8",
+            "pyenv global 3.11.8",
+            "python -m venv venv_alphasupreme",
+            "source venv_alphasupreme/bin/activate"
+          ],
+          "verificacion": "python --version debe mostrar 3.11.x"
+        },
+        {
+          "paso_id": "F0-P2",
+          "titulo": "Estructura de carpetas del proyecto",
+          "descripcion": "Crear la arquitectura de directorios desde cero siguiendo separación de responsabilidades.",
+          "estructura": {
+            "alpha_supreme_v7/": {
+              "core/": "Motor del bot (señales, IA, riesgo, ejecución)",
+              "utils/": "Herramientas auxiliares (visualización, alertas, logs)",
+              "data/": "Datos históricos descargados (excluir de git)",
+              "logs/": "Logs de operaciones en JSON (excluir de git)",
+              "models/": "Modelos ML entrenados guardados (excluir de git)",
+              "tests/": "Tests unitarios para cada módulo",
+              "notebooks/": "Jupyter notebooks para análisis exploratorio",
+              "scripts/": "Scripts utilitarios (descarga de datos, reentrenamiento)",
+              ".env": "Variables de entorno — NUNCA subir a git",
+              ".env.example": "Plantilla de variables sin valores reales",
+              "requirements.txt": "Dependencias del proyecto",
+              "config.py": "Parámetros del bot centralizados"
+            }
+          }
+        },
+        {
+          "paso_id": "F0-P3",
+          "titulo": "Instalar todas las dependencias",
+          "descripcion": "Instalar el stack tecnológico completo de una vez para detectar conflictos temprano.",
+          "requirements_txt": [
+            "# Data & Exchange",
+            "ccxt==4.3.0",
+            "python-binance==1.0.19",
+            "websockets==12.0",
+            "aiohttp==3.9.3",
+            "",
+            "# Backtesting",
+            "vectorbt==0.26.2",
+            "backtesting==0.3.3",
+            "",
+            "# Data Science",
+            "pandas==2.2.0",
+            "numpy==1.26.4",
+            "scipy==1.12.0",
+            "scikit-learn==1.4.0",
+            "",
+            "# Machine Learning",
+            "torch==2.2.0",
+            "xgboost==2.0.3",
+            "hmmlearn==0.3.2",
+            "optuna==3.5.0",
+            "",
+            "# Indicadores Técnicos",
+            "pandas-ta==0.3.14b0",
+            "ta==0.11.0",
+            "",
+            "# IA / LLMs",
+            "anthropic==0.21.0",
+            "groq==0.4.2",
+            "google-generativeai==0.4.1",
+            "",
+            "# Observabilidad",
+            "python-telegram-bot==21.0.1",
+            "plotly==5.19.0",
+            "rich==13.7.0",
+            "",
+            "# Infraestructura",
+            "python-dotenv==1.0.1",
+            "asyncio==3.4.3",
+            "sqlalchemy==2.0.27",
+            "aiosqlite==0.20.0",
+            "",
+            "# Testing",
+            "pytest==8.0.0",
+            "pytest-asyncio==0.23.5"
+          ],
+          "comando": "pip install -r requirements.txt"
+        },
+        {
+          "paso_id": "F0-P4",
+          "titulo": "Configurar variables de entorno y seguridad",
+          "descripcion": "Toda credencial debe vivir en .env, nunca en el código.",
+          "archivo_env_example": {
+            "BINANCE_API_KEY": "tu_api_key_aqui",
+            "BINANCE_API_SECRET": "tu_api_secret_aqui",
+            "BINANCE_TESTNET_KEY": "tu_testnet_key_aqui",
+            "BINANCE_TESTNET_SECRET": "tu_testnet_secret_aqui",
+            "BYBIT_API_KEY": "tu_bybit_key_aqui",
+            "BYBIT_API_SECRET": "tu_bybit_secret_aqui",
+            "GEMINI_API_KEY": "tu_gemini_key_aqui",
+            "GROQ_API_KEY": "tu_groq_key_aqui",
+            "ANTHROPIC_API_KEY": "tu_anthropic_key_aqui",
+            "TELEGRAM_BOT_TOKEN": "tu_telegram_token_aqui",
+            "TELEGRAM_CHAT_ID": "tu_chat_id_aqui",
+            "TRADING_MODE": "TESTNET",
+            "LOG_LEVEL": "DEBUG"
+          },
+          "gitignore_critico": [".env", "data/", "logs/", "models/", "__pycache__/", "*.pyc", "venv*/"]
+        },
+        {
+          "paso_id": "F0-P5",
+          "titulo": "Crear config.py centralizado",
+          "descripcion": "Todos los parámetros del bot en un solo lugar. Cambia un número aquí, cambia en todo el bot.",
+          "parametros_clave": {
+            "SYMBOL": "BTCUSDT",
+            "TIMEFRAME": "15m",
+            "LEVERAGE": 3,
+            "RISK_PER_TRADE_PCT": 0.01,
+            "KELLY_FRACTION": 0.25,
+            "ATR_PERIOD": 14,
+            "ATR_MULTIPLIER_SL": 2.2,
+            "RISK_REWARD_RATIO": 3.5,
+            "ZSCORE_THRESHOLD": 1.3,
+            "ADF_PVALUE_THRESHOLD": 0.10,
+            "MAX_DAILY_LOSS_PCT": 0.03,
+            "MAX_DRAWDOWN_PAUSE_PCT": 0.15,
+            "MAX_DRAWDOWN_STOP_PCT": 0.25,
+            "CONSECUTIVE_LOSSES_HALFSIZE": 3,
+            "WFO_TRAIN_MONTHS": 6,
+            "WFO_TEST_MONTHS": 2,
+            "PAPER_TRADING_DAYS_REQUIRED": 30
+          }
+        },
+        {
+          "paso_id": "F0-P6",
+          "titulo": "Inicializar Git y hacer primer commit",
+          "comandos": [
+            "git init",
+            "git add .gitignore .env.example requirements.txt config.py",
+            "git commit -m 'feat: initial project structure Alpha Supreme v7'"
+          ],
+          "regla": "Nunca hacer git add . sin revisar qué archivos incluye. Siempre verificar que .env no está en el commit."
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-1",
+      "nombre": "Data Layer — La Base de Todo",
+      "descripcion": "Construir el sistema de adquisición de datos tanto históricos como en tiempo real. Un bot es tan bueno como sus datos. Datos sucios = estrategia inválida.",
+      "duracion_estimada": "5-7 días",
+      "milestone": {
+        "id": "M1",
+        "nombre": "Pipeline de datos robusto y confiable",
+        "criterios_de_exito": [
+          "Descarga de datos históricos de Binance y Bybit sin errores",
+          "WebSocket conectado y recibiendo ticks en tiempo real",
+          "Datos históricos almacenados en SQLite correctamente",
+          "Reconexión automática del WebSocket funciona tras desconexión simulada",
+          "CCXT conectado a al menos 2 exchanges simultáneamente",
+          "Ningún dato NaN o corrupto llega al pipeline de indicadores"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F1-P1",
+          "titulo": "Refactorizar data_loader.py con CCXT multi-exchange",
+          "descripcion": "Reemplazar la conexión directa a Binance por CCXT para soportar múltiples exchanges de forma unificada.",
+          "implementacion_clave": {
+            "clase": "ExchangeManager",
+            "metodos": [
+              "fetch_ohlcv(symbol, timeframe, since, limit) — descarga velas históricas",
+              "fetch_order_book(symbol, limit) — profundidad del order book",
+              "fetch_funding_rate(symbol) — funding rate de futuros",
+              "fetch_open_interest(symbol) — open interest actual",
+              "fetch_liquidations(symbol) — liquidaciones recientes",
+              "fetch_taker_ratio(symbol) — ratio comprador/vendedor"
+            ],
+            "exchanges_soportados": ["binance", "bybit", "kucoin"],
+            "manejo_de_errores": "Try/except con fallback automático al exchange secundario si el primario falla"
+          },
+          "test_requerido": "test_data_loader.py — verificar que los datos descargados no tienen NaN y el OHLCV es coherente (high >= low, close dentro de high/low)"
+        },
+        {
+          "paso_id": "F1-P2",
+          "titulo": "Crear websocket_streamer.py — Datos en tiempo real",
+          "descripcion": "WebSocket asyncio para recibir ticks, order book y actualizaciones de funding rate sin bloquear el loop principal.",
+          "streams_a_implementar": [
+            "aggTrade stream: cada transacción individual en tiempo real",
+            "depth20 stream: los primeros 20 niveles del order book actualizados",
+            "markPrice stream: precio mark y funding rate en tiempo real",
+            "forceOrder stream: liquidaciones en tiempo real"
+          ],
+          "patron_implementacion": {
+            "clase": "WebSocketStreamer",
+            "metodo_principal": "async def start_streaming(symbols: list) — inicia todos los streams",
+            "reconexion": "Backoff exponencial: 1s, 2s, 4s, 8s, máximo 60s entre reintentos",
+            "buffer": "Mantener buffer de los últimos 1000 ticks en memoria para cálculo de indicadores intra-vela"
+          },
+          "test_requerido": "Simular desconexión del WebSocket y verificar reconexión automática en menos de 10 segundos"
+        },
+        {
+          "paso_id": "F1-P3",
+          "titulo": "Crear base de datos SQLite para almacenamiento local",
+          "descripcion": "Persistir datos históricos, resultados de trades y logs estructurados para análisis posterior.",
+          "tablas": {
+            "ohlcv": "timestamp, symbol, open, high, low, close, volume, timeframe",
+            "trades": "id, timestamp_entry, timestamp_exit, symbol, direction, entry_price, exit_price, size, pnl, fees, reason_entry, reason_exit, regime_at_entry, ai_score, ml_score",
+            "indicators_snapshot": "timestamp, symbol, zscore, adf_pvalue, cvd, vwap, atr, funding_rate, open_interest, regime",
+            "ai_decisions": "timestamp, symbol, agent_technical_decision, agent_risk_decision, agent_adversarial_decision, final_decision, confidence_score, context_hash",
+            "performance_daily": "date, starting_equity, ending_equity, daily_pnl, daily_pnl_pct, max_intraday_drawdown, trades_count, wins, losses"
+          },
+          "comando_inicializacion": "python scripts/init_database.py"
+        },
+        {
+          "paso_id": "F1-P4",
+          "titulo": "Script de descarga masiva de datos históricos",
+          "descripcion": "Descargar mínimo 3 años de datos históricos para todos los símbolos objetivo antes de comenzar el backtesting.",
+          "parametros": {
+            "simbolos": ["BTCUSDT", "ETHUSDT", "SOLUSDT"],
+            "timeframes": ["1m", "5m", "15m", "1h", "4h"],
+            "desde": "2021-01-01",
+            "hasta": "2025-12-31"
+          },
+          "nota_importante": "Los datos de 2021 cubren bull run extremo, 2022 cubre bear market severo, 2023-2024 cubre recuperación. Necesitas los 3 regímenes para validar tu estrategia.",
+          "comando": "python scripts/download_historical_data.py",
+          "tiempo_estimado": "2-4 horas dependiendo de la conexión"
+        },
+        {
+          "paso_id": "F1-P5",
+          "titulo": "Pipeline de limpieza y validación de datos",
+          "descripcion": "Los datos de exchanges reales tienen huecos, duplicados y anomalías. Limpiarlos antes de usarlos.",
+          "validaciones": [
+            "Detectar y rellenar gaps temporales (velas faltantes) con forward-fill o interpolación",
+            "Eliminar duplicados por timestamp",
+            "Verificar que high >= open, high >= close, low <= open, low <= close",
+            "Detectar outliers extremos (precio que sube 50% en una vela = dato corrupto)",
+            "Verificar continuidad temporal (no saltos de más de 3x el timeframe)"
+          ],
+          "clase": "DataCleaner en utils/data_cleaner.py",
+          "test_requerido": "Verificar que el dataset limpio tiene 0 NaN y 0 duplicados"
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-2",
+      "nombre": "Signal Layer — Indicadores y Detector de Régimen",
+      "descripcion": "Construir el motor de señales expandido con microestructura de mercado y detección de régimen. Este es el corazón matemático del bot.",
+      "duracion_estimada": "7-10 días",
+      "milestone": {
+        "id": "M2",
+        "nombre": "Sistema de señales completo con detección de régimen",
+        "criterios_de_exito": [
+          "Todos los indicadores calculados correctamente y verificados contra TradingView",
+          "Detector de régimen HMM entrenado y clasificando correctamente bull/bear/lateral en datos históricos",
+          "Order flow indicators (OBI, taker ratio) funcionando con datos reales",
+          "Tests unitarios pasan para todos los indicadores",
+          "El régimen detectado en 2021 es mayoritariamente TRENDING_UP",
+          "El régimen detectado en 2022 es mayoritariamente TRENDING_DOWN",
+          "El régimen detectado en 2023 es mayoritariamente RANGING"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F2-P1",
+          "titulo": "Refactorizar indicators.py con stack completo",
+          "indicadores_actuales_mantener": [
+            "Z-Score (mean reversion signal)",
+            "ADF Test (stationarity)",
+            "CVD — Cumulative Volume Delta",
+            "VWAP — Volume Weighted Average Price",
+            "ATR_14 — Average True Range"
+          ],
+          "indicadores_nuevos_agregar": [
+            "ADX_14 — Average Directional Index (fuerza de tendencia). ADX > 25 = tendencia, < 20 = lateral",
+            "RSI_14 — Relative Strength Index (ya mencionado en doc original pero no en indicators.py)",
+            "Bollinger Band Width — medida de volatilidad de régimen",
+            "EMA_20 y EMA_50 — para contexto de tendencia",
+            "Order Book Imbalance (OBI): (bid_volume_top10 - ask_volume_top10) / (bid_volume_top10 + ask_volume_top10). Rango -1 a +1",
+            "Taker Buy/Sell Ratio: compras market / ventas market en las últimas N velas",
+            "Funding Rate Momentum: pendiente del funding rate en las últimas 8 horas",
+            "Liquidation Delta: diferencia entre long liquidaciones y short liquidaciones en las últimas 4 velas"
+          ],
+          "test_requerido": "Comparar Z-Score y VWAP calculados contra los valores de TradingView para el mismo período. Diferencia máxima aceptable: 0.1%"
+        },
+        {
+          "paso_id": "F2-P2",
+          "titulo": "Crear order_flow.py — Microestructura de mercado",
+          "descripcion": "Los indicadores de order flow son los más difíciles de calcular pero los más informativos sobre la intención real del mercado.",
+          "clase": "OrderFlowAnalyzer",
+          "metodos": [
+            "calculate_obi(order_book) — calcula imbalance del order book en tiempo real",
+            "calculate_taker_ratio(trades) — ratio comprador/vendedor de los últimos N trades",
+            "detect_large_orders(trades, threshold) — identifica órdenes institucionales (> threshold USDT)",
+            "calculate_liquidation_delta(liquidations) — diferencia neta de liquidaciones long vs short",
+            "detect_absorption(cvd, price) — detecta absorción: precio baja pero CVD sube (acumulación institucional)"
+          ],
+          "interpretacion": {
+            "señal_compra_fuerte": "OBI > 0.3 AND taker_ratio > 1.2 AND liquidation_delta < 0 (más shorts liquidados) AND absorcion_detectada = True",
+            "señal_venta_fuerte": "OBI < -0.3 AND taker_ratio < 0.8 AND liquidation_delta > 0 (más longs liquidados)",
+            "señal_neutra": "OBI entre -0.1 y 0.1"
+          }
+        },
+        {
+          "paso_id": "F2-P3",
+          "titulo": "Crear regime_detector.py — HMM de 3 estados",
+          "descripcion": "Hidden Markov Model para detectar el régimen de mercado actual. Este módulo es el gatekeeper de toda la estrategia.",
+          "implementacion": {
+            "libreria": "hmmlearn.hmm.GaussianHMM",
+            "n_components": 3,
+            "estados": {
+              "estado_0": "RANGING — mercado lateral, Z-Score y mean-reversion funcionan",
+              "estado_1": "TRENDING_UP — tendencia alcista, mean-reversion peligroso",
+              "estado_2": "TRENDING_DOWN — tendencia bajista, mean-reversion muy peligroso"
+            },
+            "features_para_entrenamiento": [
+              "retorno_diario",
+              "volatilidad_realizada_20d",
+              "adx_14",
+              "slope_ema20_50",
+              "funding_rate_promedio_7d"
+            ],
+            "proceso_entrenamiento": [
+              "1. Descargar datos históricos de 3 años para BTC",
+              "2. Calcular features para cada período de 4 horas",
+              "3. Entrenar HMM con GaussianHMM(n_components=3, n_iter=100)",
+              "4. Etiquetar manualmente 10 períodos conocidos (bull 2021, crash mayo 2021, bear 2022, etc.) para verificar que los estados del HMM coinciden",
+              "5. Guardar el modelo entrenado en models/regime_hmm.pkl",
+              "6. Reentrenar mensualmente con datos nuevos"
+            ],
+            "reglas_de_trading_por_regimen": {
+              "RANGING": "Activar estrategia mean-reversion. Apalancamiento normal.",
+              "TRENDING_UP": "Suspender mean-reversion. Activar momentum alcista si existe. Reducir sizing al 25%.",
+              "TRENDING_DOWN": "Suspender mean-reversion. Activar momentum bajista o cerrar todo. Reducir sizing al 10%.",
+              "TRANSICION": "Si el HMM detecta cambio de régimen en las últimas 2 horas, reducir sizing al 0% hasta confirmar nuevo régimen."
+            }
+          },
+          "test_requerido": [
+            "Verificar que el régimen detectado para enero 2021 es TRENDING_UP",
+            "Verificar que mayo 2021 (crash -50%) es TRENDING_DOWN",
+            "Verificar que noviembre 2022 (FTX collapse) es TRENDING_DOWN con alta confianza",
+            "Verificar que 2023 H1 tiene mayoría de períodos RANGING"
+          ]
+        },
+        {
+          "paso_id": "F2-P4",
+          "titulo": "Integrar todas las señales en un SignalEngine unificado",
+          "descripcion": "Un solo punto de entrada que combina todos los indicadores y retorna una señal estructurada.",
+          "clase": "SignalEngine en core/signal_engine.py",
+          "output_estructura": {
+            "timestamp": "ISO8601",
+            "symbol": "BTCUSDT",
+            "regime": "RANGING | TRENDING_UP | TRENDING_DOWN",
+            "regime_confidence": "0.0 a 1.0",
+            "zscore": -1.45,
+            "adf_pvalue": 0.032,
+            "signal_meanreversion": "LONG | SHORT | NEUTRAL",
+            "signal_momentum": "LONG | SHORT | NEUTRAL",
+            "obi": 0.34,
+            "taker_ratio": 1.18,
+            "funding_rate": -0.0005,
+            "liquidation_delta": -2400000,
+            "absorption_detected": true,
+            "atr": 850.0,
+            "combined_signal": "LONG | SHORT | NEUTRAL | BLOCKED_BY_REGIME",
+            "signal_strength": "0.0 a 1.0"
+          }
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-3",
+      "nombre": "ML Layer — Modelo de Machine Learning Local",
+      "descripcion": "Construir el predictor de ML local que complementa la IA cognitiva. Genera señales de alta velocidad sin costo de API y con latencia de milisegundos. Perplexity recomienda LSTM/DQN, nosotros implementamos XGBoost primero (más interpretable, más robusto con pocos datos) y LSTM después.",
+      "duracion_estimada": "10-14 días",
+      "milestone": {
+        "id": "M3",
+        "nombre": "Modelo ML entrenado, validado y produciendo señales",
+        "criterios_de_exito": [
+          "XGBoost entrenado con accuracy > 55% en out-of-sample (no overfitting)",
+          "Features importance muestra que Z-Score, OBI y régimen son los más predictivos",
+          "Modelo guardado y cargable en < 100ms",
+          "El modelo NO se reentrena en el loop de trading (solo en scripts separados)",
+          "Walk-forward validation del modelo muestra consistencia entre ventanas",
+          "Backtesting con señales ML supera backtesting con señales solo estadísticas"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F3-P1",
+          "titulo": "Feature Engineering — Construir el dataset de entrenamiento",
+          "descripcion": "La calidad del modelo ML depende 80% de los features. Construir un dataset rico y sin data leakage.",
+          "features_input": [
+            "zscore_actual",
+            "zscore_cambio_5_velas",
+            "adf_pvalue",
+            "cvd_delta_10_velas",
+            "vwap_distance_pct (distancia precio actual al VWAP)",
+            "atr_ratio (ATR actual / ATR promedio 30 días)",
+            "obi_actual",
+            "obi_promedio_10_velas",
+            "taker_ratio_actual",
+            "funding_rate",
+            "funding_rate_momentum",
+            "open_interest_cambio_pct",
+            "liquidation_delta_4_velas",
+            "regime_encoded (0=RANGING, 1=TRENDING_UP, 2=TRENDING_DOWN)",
+            "hora_del_dia_encoded (0-23, para capturar sesiones de mercado)",
+            "dia_semana_encoded (0-6)",
+            "volatilidad_realizada_1h",
+            "rsi_14",
+            "adx_14",
+            "bb_width"
+          ],
+          "target_variable": {
+            "descripcion": "Variable binaria: 1 si el precio sube más que ATR*1.0 en las siguientes 4 velas (sin tocar el stop), 0 en caso contrario",
+            "nota_critica": "El target debe calcularse mirando hacia adelante SOLO para el entrenamiento. En producción, el modelo predice sin ver el futuro."
+          },
+          "regla_anti_leakage": "Usar TimeSeriesSplit de scikit-learn. NUNCA usar datos futuros como features. NUNCA mezclar datos de entrenamiento y test aleatoriamente."
+        },
+        {
+          "paso_id": "F3-P2",
+          "titulo": "Entrenar modelo XGBoost como línea base",
+          "descripcion": "XGBoost primero por ser más interpretable, más rápido de entrenar y más robusto con datasets medianos (50k-200k filas).",
+          "proceso": [
+            "1. Dividir datos temporalmente: train hasta 2024-06-30, validation 2024-07-01 a 2024-12-31, test 2025-01-01 a 2025-12-31",
+            "2. Usar optuna para hyperparameter tuning (n_estimators, max_depth, learning_rate, subsample)",
+            "3. Entrenar con early stopping basado en log-loss en el validation set",
+            "4. Evaluar métricas: accuracy, precision, recall, F1, AUC-ROC",
+            "5. Revisar feature importance: si los top features no tienen sentido económico, hay data leakage",
+            "6. Guardar modelo en models/xgboost_v1.pkl con joblib"
+          ],
+          "metricas_minimas_para_usar": {
+            "accuracy_out_of_sample": "> 54%",
+            "auc_roc": "> 0.57",
+            "nota": "Un accuracy de 55-60% consistente es EXCELENTE en crypto. Desconfía de modelos con 90%+ — están overfitteados."
+          }
+        },
+        {
+          "paso_id": "F3-P3",
+          "titulo": "Entrenar modelo LSTM para capturar dependencias temporales",
+          "descripcion": "El LSTM captura patrones en secuencias temporales que XGBoost no puede ver. Complementario, no sustituto.",
+          "arquitectura": {
+            "framework": "PyTorch",
+            "estructura": "Input(features) → LSTM(128 units, 2 layers) → Dropout(0.3) → Dense(64) → Dense(1, sigmoid)",
+            "sequence_length": 20,
+            "batch_size": 128,
+            "epochs": 50,
+            "optimizer": "Adam con lr=0.001",
+            "scheduler": "ReduceLROnPlateau patience=5"
+          },
+          "proceso": [
+            "1. Normalizar features con StandardScaler (guardar el scaler para usarlo en producción)",
+            "2. Crear secuencias de longitud 20 velas para el LSTM",
+            "3. Entrenar con early stopping (patience=10)",
+            "4. Guardar mejor modelo por validation loss como models/lstm_v1.pt"
+          ],
+          "nota": "El LSTM necesita más datos y más tiempo de entrenamiento que XGBoost. Si tienes menos de 50k filas, XGBoost será mejor."
+        },
+        {
+          "paso_id": "F3-P4",
+          "titulo": "Crear Ensemble: combinar XGBoost + LSTM",
+          "descripcion": "El ensemble promedia las probabilidades de ambos modelos. Es más robusto que cualquier modelo individual.",
+          "implementacion": {
+            "formula": "prob_final = (prob_xgboost * 0.6) + (prob_lstm * 0.4)",
+            "umbral_señal": "prob_final > 0.60 para LONG, prob_final < 0.40 para SHORT, entre 0.40-0.60 es NEUTRAL",
+            "clase": "MLPredictor en core/ml_predictor.py"
+          },
+          "test_walk_forward": "Usar ventanas deslizantes de 6 meses de entrenamiento y 2 meses de test. Si accuracy cae > 15% entre ventanas, el modelo no generaliza."
+        },
+        {
+          "paso_id": "F3-P5",
+          "titulo": "Crear pipeline de reentrenamiento automático",
+          "descripcion": "El mercado cambia. El modelo debe reentrenarse periódicamente con datos nuevos.",
+          "script": "scripts/retrain_models.py",
+          "frecuencia": "Mensual o cuando el accuracy en los últimos 30 días cae más del 10% respecto al baseline",
+          "proceso": [
+            "1. Descargar datos nuevos del último mes",
+            "2. Agregar al dataset histórico",
+            "3. Reentrenar con la misma arquitectura y hyperparameters guardados",
+            "4. Comparar performance del modelo nuevo vs modelo actual en los últimos 30 días",
+            "5. Solo reemplazar el modelo si el nuevo es mejor",
+            "6. Guardar versión anterior como backup"
+          ]
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-4",
+      "nombre": "AI Cognitive Layer — Motor Multi-Agente",
+      "descripcion": "Refactorizar el motor de IA de un solo modelo secuencial a una arquitectura multi-agente con consenso. Los LLMs actúan como capa de validación cognitiva de alto nivel, no como señal primaria.",
+      "duracion_estimada": "5-7 días",
+      "milestone": {
+        "id": "M4",
+        "nombre": "Sistema multi-agente funcionando con consenso",
+        "criterios_de_exito": [
+          "3 agentes LLM ejecutándose en paralelo con asyncio",
+          "Temperatura=0 en todos los agentes para reproducibilidad",
+          "El sistema rechaza operaciones cuando los agentes divergen",
+          "Latencia total del proceso multi-agente < 8 segundos",
+          "Los logs registran la decisión individual de cada agente",
+          "El agente adversarial rechaza al menos el 30% de las señales que los otros aprueban"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F4-P1",
+          "titulo": "Diseñar los prompts de cada agente",
+          "descripcion": "Cada agente tiene un rol, un contexto y un formato de respuesta estrictamente definido.",
+          "agentes": {
+            "agente_tecnico": {
+              "modelo": "gemini-1.5-pro o claude-3-haiku (más rápido)",
+              "temperatura": 0,
+              "rol": "Eres un analista técnico cuantitativo especializado en futuros perpetuos de crypto. Tu única función es analizar indicadores técnicos y de flujo de órdenes.",
+              "input": "Z-Score, ADF p-value, CVD, VWAP, ATR, OBI, taker ratio, funding rate, open interest, régimen detectado",
+              "output_formato": "JSON: {decision: APPROVE|REJECT, razon: string_corta, confianza: 0-100}",
+              "criterio": "APPROVE solo si Z-Score confirma la dirección, ADF < 0.10, y OBI apoya la señal"
+            },
+            "agente_riesgo": {
+              "modelo": "groq/llama3-70b o gemini-1.5-flash",
+              "temperatura": 0,
+              "rol": "Eres un gestor de riesgo institucional. Tu única función es evaluar el contexto macro y detectar condiciones peligrosas de mercado.",
+              "input": "Funding rate, open interest, liquidaciones recientes, régimen de mercado, correlación con BTC si es altcoin",
+              "output_formato": "JSON: {decision: APPROVE|REJECT, nivel_riesgo: BAJO|MEDIO|ALTO|EXTREMO, razon: string}",
+              "criterio": "REJECT si funding rate es extremo (>0.1% o <-0.1%), si hay liquidaciones masivas en la dirección del trade, o si el régimen es TRENDING en contra"
+            },
+            "agente_adversarial": {
+              "modelo": "claude-3-haiku o groq/llama3-8b",
+              "temperatura": 0,
+              "rol": "Eres un devil's advocate. Tu función es encontrar activamente todas las razones por las que este trade es una mala idea. Sé escéptico por defecto.",
+              "input": "Todo el contexto completo del trade propuesto",
+              "output_formato": "JSON: {decision: APPROVE|REJECT, objeciones: [lista_de_objeciones], severidad_objeciones: BAJA|MEDIA|ALTA}",
+              "criterio": "Si encuentras 2+ objeciones de severidad ALTA, emite REJECT"
+            },
+            "agente_ejecutor": {
+              "modelo": "gemini-1.5-pro o claude-3-sonnet",
+              "temperatura": 0,
+              "rol": "Eres el director de trading. Recibes las evaluaciones de 3 agentes especializados y tomas la decisión final ponderada.",
+              "input": "Las respuestas JSON de los 3 agentes anteriores + señal del ML predictor",
+              "output_formato": "JSON: {decision_final: APPROVE|REJECT, confidence_score: 0-100, size_multiplier: 0.25|0.5|0.75|1.0, razon_final: string}",
+              "reglas": [
+                "Si 2+ agentes dicen REJECT → REJECT siempre",
+                "Si agente_adversarial dice REJECT con severidad ALTA → REJECT siempre",
+                "Si ML predictor dice NEUTRAL y 1 agente dice REJECT → REJECT",
+                "Si todos aprueban y ML dice LONG/SHORT → APPROVE con size_multiplier según confianza"
+              ]
+            }
+          }
+        },
+        {
+          "paso_id": "F4-P2",
+          "titulo": "Implementar agent_orchestrator.py con asyncio",
+          "descripcion": "Los 3 agentes análisis (técnico, riesgo, adversarial) se ejecutan EN PARALELO para minimizar latencia.",
+          "patron": [
+            "1. Preparar el contexto completo (señales del SignalEngine + snapshot del mercado)",
+            "2. Lanzar los 3 agentes en paralelo con asyncio.gather()",
+            "3. Esperar respuestas con timeout de 10 segundos por agente",
+            "4. Si algún agente da timeout, contar como REJECT automático",
+            "5. Pasar las 3 respuestas al agente ejecutor",
+            "6. Retornar decision_final con confidence_score y size_multiplier",
+            "7. Guardar toda la sesión en la tabla ai_decisions de SQLite"
+          ],
+          "compresion_contexto": "Mantener compresión TOON para reducir tokens. El contexto no debe superar 2000 tokens por agente.",
+          "caching": "Hashear el estado del mercado (round a 2 decimales todos los indicadores). Si el hash coincide con una decisión reciente (< 5 minutos), reusar la respuesta cacheada."
+        },
+        {
+          "paso_id": "F4-P3",
+          "titulo": "Integrar ML Predictor con el orquestador",
+          "descripcion": "El output del MLPredictor se incluye como input del agente ejecutor para que tenga la perspectiva del modelo estadístico.",
+          "integracion": "ml_score = ml_predictor.predict(signal_engine_output). Este score se agrega al payload del agente ejecutor como campo 'ml_probability' y 'ml_signal'."
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-5",
+      "nombre": "Risk Layer — Guardian de Capital",
+      "descripcion": "El sistema de gestión de riesgo que protege el capital en todo momento. Es independiente de la estrategia y de la IA. Ninguna decisión de trading puede saltarse el Risk Guardian.",
+      "duracion_estimada": "5-7 días",
+      "milestone": {
+        "id": "M5",
+        "nombre": "Risk Guardian activo y probado bajo condiciones extremas",
+        "criterios_de_exito": [
+          "Position sizing triple calculado correctamente en 100 escenarios de prueba",
+          "Kelly Criterion fraccionado nunca produce una posición mayor al 2% del equity",
+          "Circuit breaker diario detiene el bot al simular pérdida del 3% en un día",
+          "Circuit breaker de drawdown máximo detiene el bot al simular drawdown del 15%",
+          "El bot no puede abrir una segunda posición si ya hay una abierta",
+          "Todos los circuit breakers están registrados en los logs"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F5-P1",
+          "titulo": "Crear position_sizer.py — Sistema triple de sizing",
+          "implementacion": {
+            "metodo_1_porcentual": {
+              "formula": "size_usdt = equity_actual * RISK_PER_TRADE_PCT / (stop_loss_pct / 100)",
+              "ejemplo": "Equity=10000, riesgo=1%, SL=2.2*ATR=1% del precio → size = 10000*0.01/0.01 = 10000 USDT"
+            },
+            "metodo_2_atr": {
+              "formula": "risk_amount_usdt = equity_actual * RISK_PER_TRADE_PCT; contracts = risk_amount_usdt / (ATR * ATR_MULTIPLIER)",
+              "descripcion": "Igual que el método actual del bot pero limitado por el método 1"
+            },
+            "metodo_3_kelly": {
+              "formula": "f = (win_rate * avg_win_pct - loss_rate * avg_loss_pct) / avg_win_pct; kelly_size = equity * f * KELLY_FRACTION",
+              "nota": "Requiere historial de al menos 30 trades para ser válido. Usar método 1 si hay menos trades.",
+              "kelly_fraction": 0.25
+            },
+            "regla_final": "final_size = min(size_metodo_1, size_metodo_2, size_metodo_3)",
+            "ajuste_por_confianza": "final_size *= size_multiplier_del_agente_ejecutor (0.25 a 1.0)",
+            "ajuste_por_drawdown": "Si drawdown_actual > 10% → final_size *= 0.5; Si drawdown_actual > 15% → no nuevas posiciones"
+          }
+        },
+        {
+          "paso_id": "F5-P2",
+          "titulo": "Crear risk_guardian.py — Circuit Breakers multinivel",
+          "clase": "RiskGuardian",
+          "niveles": {
+            "nivel_0_pre_trade": {
+              "descripcion": "Verificaciones antes de aprobar cualquier trade",
+              "checks": [
+                "¿Hay una posición abierta? → bloquear",
+                "¿El régimen es TRENDING y la señal es mean-reversion? → bloquear",
+                "¿El funding rate está en zona extrema (>0.1%)? → bloquear si la señal va en contra del funding",
+                "¿El spread bid-ask es > 2x el promedio de 24h? → bloquear por baja liquidez"
+              ]
+            },
+            "nivel_1_operacion": {
+              "descripcion": "Gestión durante el trade abierto",
+              "checks": [
+                "Monitorear SL y TP en tiempo real con WebSocket",
+                "Si price action contradice la tesis del trade (ej: CVD se invierte) → cierre anticipado",
+                "Activar trailing stop al alcanzar 50% del TP"
+              ]
+            },
+            "nivel_2_diario": {
+              "descripcion": "Límites de pérdida por día calendario",
+              "regla": "Si pnl_hoy <= -(equity_inicio_dia * MAX_DAILY_LOSS_PCT) → pausar trading hasta el día siguiente",
+              "accion": "Cerrar posición abierta si existe, no abrir nuevas, enviar alerta Telegram"
+            },
+            "nivel_3_racha": {
+              "descripcion": "Protección ante racha perdedora",
+              "regla": "Si consecutive_losses >= CONSECUTIVE_LOSSES_HALFSIZE → reducir sizing al 50% por las siguientes 5 operaciones",
+              "reset": "El contador se resetea con cada operación ganadora"
+            },
+            "nivel_4_drawdown_parcial": {
+              "descripcion": "Reducción de actividad ante drawdown significativo",
+              "regla": "Si drawdown_desde_pico > 10% → reducir sizing al 25% y aumentar umbral de Z-Score a 1.8",
+              "accion": "Solo operar señales de muy alta confianza (confidence_score > 85)"
+            },
+            "nivel_5_drawdown_maximo": {
+              "descripcion": "Pausa completa ante drawdown severo",
+              "regla": "Si drawdown_desde_pico > MAX_DRAWDOWN_PAUSE_PCT (15%) → pausar el bot completamente",
+              "accion": "Cerrar posición, enviar alerta urgente Telegram, requerir restart manual"
+            },
+            "nivel_6_catastrofe": {
+              "descripcion": "Stop total ante drawdown catastrófico",
+              "regla": "Si drawdown_desde_pico > MAX_DRAWDOWN_STOP_PCT (25%) → detener bot permanentemente",
+              "accion": "Apagar el bot, registrar evento en logs, enviar alerta crítica"
+            }
+          },
+          "metodo_principal": "can_trade(signal, portfolio_state) → bool. Este método debe ser el único punto de entrada para cualquier decisión de trading."
+        },
+        {
+          "paso_id": "F5-P3",
+          "titulo": "Crear correlacion_guard.py para multi-asset",
+          "descripcion": "Cuando el bot opere múltiples pares, prevenir sobreexposición en activos correlacionados.",
+          "implementacion": [
+            "Calcular correlación de Pearson entre los retornos de las últimas 30 velas de cada par activo",
+            "Si dos pares tienen correlación > 0.70 y ambas señales son en la misma dirección → bloquear el segundo trade",
+            "Máximo 2 posiciones simultáneas aunque sean pares distintos",
+            "Registrar correlación en el momento de apertura de cada trade"
+          ]
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-6",
+      "nombre": "Backtesting Avanzado — Validación Científica",
+      "descripcion": "Con todos los módulos construidos, hacer el backtesting real y riguroso usando VectorBT con Walk-Forward Optimization. Este paso valida que el sistema completo (señales + ML + IA + riesgo) tiene edge estadístico real.",
+      "duracion_estimada": "7-10 días",
+      "milestone": {
+        "id": "M6",
+        "nombre": "Estrategia validada científicamente con WFO",
+        "criterios_de_exito": [
+          "Sharpe Ratio > 1.8 en el período out-of-sample (datos de 2025 que nunca se usaron)",
+          "Max drawdown < 18% en el out-of-sample",
+          "Profit Factor > 1.5 en el out-of-sample",
+          "Win Rate > 45% en el out-of-sample",
+          "Al menos 100 trades en el período de test para significancia estadística",
+          "Monte Carlo simulation muestra que el Sharpe percentil 5 sigue siendo > 1.0",
+          "El WFO muestra consistencia (Sharpe no varía más del 40% entre ventanas)"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F6-P1",
+          "titulo": "Refactorizar backtest.py para eliminar lookahead bias",
+          "reglas_obligatorias": [
+            "REGLA 1: La señal generada en la vela T solo puede ejecutarse al OPEN de la vela T+1. Nunca en el mismo tick.",
+            "REGLA 2: El SL y TP se evalúan en la vela T+2 en adelante. Nunca en la vela de entrada.",
+            "REGLA 3: El precio de ejecución es el OPEN de T+1, no el CLOSE de T.",
+            "REGLA 4: Agregar slippage: precio_real = precio_open * (1 + slippage_pct) para longs, * (1 - slippage_pct) para shorts.",
+            "REGLA 5: Agregar delay de latencia simulada: si la señal aparece en el minuto 14:59 de una vela de 15m, el bot no puede reaccionar hasta el minuto 15:00 + delay."
+          ],
+          "slippage_por_condicion": {
+            "normal": "0.05% (mercado líquido)",
+            "alta_volatilidad": "0.15% (ATR > 2x promedio)",
+            "crisis": "0.30% (régimen TRENDING_DOWN con liquidaciones masivas)"
+          }
+        },
+        {
+          "paso_id": "F6-P2",
+          "titulo": "Implementar Walk-Forward Optimization con VectorBT",
+          "proceso": [
+            "1. Dividir dataset total en: in-sample (2021-2024), out-of-sample final (2025) — el out-of-sample NUNCA se toca hasta el backtest final",
+            "2. Sobre el in-sample, aplicar WFO: ventanas de 6 meses entrenamiento + 2 meses test, deslizando 1 mes",
+            "3. Para cada ventana, usar Optuna para optimizar: Z-Score threshold, ATR multiplier, ratio riesgo/beneficio",
+            "4. Registrar los parámetros óptimos de cada ventana. Si varían mucho entre ventanas, hay overfitting",
+            "5. Usar los parámetros promedio de todas las ventanas como parámetros finales",
+            "6. Solo entonces correr el backtest final en el out-of-sample de 2025",
+            "7. Si el out-of-sample pasa los criterios del milestone, proceder a paper trading"
+          ],
+          "libreria": "vectorbt con Portfolio.from_signals() para velocidad y VectorBT.Portfolio para walk-forward"
+        },
+        {
+          "paso_id": "F6-P3",
+          "titulo": "Monte Carlo Simulation",
+          "descripcion": "Generar 1000 variaciones del backtest para obtener el rango realista de outcomes posibles.",
+          "proceso": [
+            "1. Tomar la lista de trades del backtest (cada trade como (pnl, días_duración))",
+            "2. Permutar aleatoriamente el orden de los trades 1000 veces",
+            "3. Calcular Sharpe y max drawdown para cada permutación",
+            "4. El Sharpe del percentil 5 de las 1000 simulaciones es el 'Sharpe pesimista'",
+            "5. Si el Sharpe pesimista > 1.0, la estrategia es robusta"
+          ],
+          "interpretacion": "Un backtest con Sharpe 2.5 pero Sharpe pesimista Monte Carlo de 0.8 significa que el buen performance dependió del orden de los trades. La estrategia no es robusta."
+        },
+        {
+          "paso_id": "F6-P4",
+          "titulo": "Stress testing en escenarios históricos extremos",
+          "escenarios": [
+            "Mayo 2021: BTC cae 50% en 3 semanas. ¿El bot sobrevive?",
+            "Noviembre 2022: Colapso FTX, volatilidad extrema, spread de 10x. ¿El bot actúa correctamente?",
+            "Marzo 2020: COVID crash, liquidez evaporada. ¿Los circuit breakers frenan las pérdidas?",
+            "Enero 2024: ETF Bitcoin approval pump. ¿El régimen detector lo clasifica correctamente?"
+          ],
+          "criterio": "En cada escenario, el drawdown máximo no debe superar el 20% y el bot debe sobrevivir sin intervención manual."
+        },
+        {
+          "paso_id": "F6-P5",
+          "titulo": "Comparar sistema completo vs estrategia original",
+          "comparacion": {
+            "columnas": ["Métrica", "Bot Original (v6.1)", "Bot Nuevo (v7.0)"],
+            "metricas": ["Sharpe Ratio", "Max Drawdown", "Win Rate", "Profit Factor", "Calmar Ratio", "Número de trades/mes"]
+          },
+          "nota": "Si el bot nuevo no supera al original en todas las métricas, revisar qué módulo está degradando la performance."
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-7",
+      "nombre": "Execution Layer — Salidas Inteligentes",
+      "descripcion": "Refactorizar el sistema de salida del bot para maximizar ganancias en trades ganadores y minimizar pérdidas en trades perdedores.",
+      "duracion_estimada": "4-5 días",
+      "milestone": {
+        "id": "M7",
+        "nombre": "Sistema de salida inteligente implementado y backtestado",
+        "criterios_de_exito": [
+          "Salida parcial al 50% del TP con movimiento del SL a breakeven funciona",
+          "Trailing stop dinámico (ATR-based) activado correctamente",
+          "Salida anticipada por cambio de régimen funciona en backtesting",
+          "El nuevo sistema de salida mejora el Profit Factor vs el TP fijo",
+          "order_executor.py maneja correctamente errores de API y reintentos"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F7-P1",
+          "titulo": "Crear exit_manager.py — Estrategia de salida escalonada",
+          "estrategia_salida": {
+            "etapa_1_entrada": {
+              "sl_inicial": "Precio_entrada +/- (ATR * 2.2)",
+              "tp_completo": "Precio_entrada -/+ (ATR * 2.2 * 3.5)"
+            },
+            "etapa_2_al_50_pct_tp": {
+              "trigger": "Precio alcanza el 50% del camino al TP completo",
+              "accion": "Cerrar el 50% de la posición. Mover SL a breakeven (precio de entrada).",
+              "resultado": "El trade no puede cerrar en pérdida desde este punto"
+            },
+            "etapa_3_al_100_pct_tp": {
+              "trigger": "Precio alcanza el TP original",
+              "accion": "Cerrar el 25% adicional. Activar trailing stop de 1.5*ATR para el 25% restante.",
+              "resultado": "Asegurar ganancia pero dejar el 25% correr si hay momentum"
+            },
+            "etapa_4_trailing": {
+              "trigger": "El 25% restante con trailing stop activo",
+              "accion": "El stop sube (en longs) o baja (en shorts) en 1.5*ATR por cada vela que se consolida en ganancia",
+              "cierre": "El trailing stop toca el precio → cerrar la posición restante"
+            },
+            "salida_anticipada_por_regimen": {
+              "trigger": "El régimen detector cambia de estado durante el trade",
+              "accion": "Evaluar si el nuevo régimen contradice la tesis del trade. Si contradice → cerrar al precio de mercado."
+            },
+            "salida_por_tiempo": {
+              "trigger": "El trade lleva más de N velas abierto sin moverse significativamente (< 0.5*ATR de ganancia)",
+              "accion": "Cerrar a precio de mercado. El capital inmovilizado tiene un costo de oportunidad.",
+              "n_velas_maximo": 20
+            }
+          }
+        },
+        {
+          "paso_id": "F7-P2",
+          "titulo": "Crear order_executor.py — Ejecución real de órdenes",
+          "descripcion": "Módulo que traduce decisiones del bot en órdenes reales en el exchange.",
+          "funcionalidades": [
+            "place_market_order(symbol, side, quantity) — entrada al mercado",
+            "place_stop_loss(symbol, side, stop_price) — SL como stop-market order",
+            "place_take_profit(symbol, side, tp_price) — TP como limit order",
+            "cancel_all_orders(symbol) — cancelar todas las órdenes abiertas",
+            "get_position(symbol) — consultar posición actual",
+            "Reintentos automáticos: si una orden falla, reintentar 3 veces con delay de 0.5s entre intentos",
+            "Verificar que la orden fue ejecutada consultando el estado 2 segundos después"
+          ],
+          "manejo_errores": {
+            "InsufficientFunds": "Reducir el tamaño al 80% y reintentar",
+            "NetworkError": "Esperar 2 segundos y reintentar hasta 3 veces",
+            "ExchangeError": "Registrar en logs, enviar alerta Telegram, no reintentar"
+          }
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-8",
+      "nombre": "Learning Layer — Memoria y Auto-Mejora",
+      "descripcion": "El bot aprende de sus propios trades y ajusta parámetros con el tiempo. Esta es la diferencia entre un bot estático y un agente adaptativo.",
+      "duracion_estimada": "5-7 días",
+      "milestone": {
+        "id": "M8",
+        "nombre": "Loop de auto-mejora activo y produciendo insights",
+        "criterios_de_exito": [
+          "Cada trade guardado en SQLite con contexto completo",
+          "Análisis post-trade automático generado cada 20 operaciones",
+          "El análisis identifica correctamente las condiciones de mercado más rentables",
+          "El resumen de aprendizaje se incluye automáticamente en el prompt de los agentes IA",
+          "El sistema propone ajustes de parámetros basados en el historial"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F8-P1",
+          "titulo": "Crear trade_memory.py — Persistencia y análisis de trades",
+          "clase": "TradeMemory",
+          "metodos": [
+            "save_trade(trade_data) — guarda el trade completo en SQLite con todo el contexto",
+            "get_recent_trades(n=50) — recupera los últimos N trades",
+            "analyze_performance_by_regime() — win rate y expectancy segmentado por régimen de mercado",
+            "analyze_performance_by_time() — performance por hora del día y día de semana",
+            "analyze_performance_by_zscore() — performance segmentado por Z-Score de entrada",
+            "find_best_conditions() — retorna las 5 combinaciones de condiciones con mayor expectancy",
+            "find_worst_conditions() — retorna las 5 combinaciones de condiciones que más pierden"
+          ]
+        },
+        {
+          "paso_id": "F8-P2",
+          "titulo": "Crear self_improver.py — Auto-ajuste de parámetros",
+          "descripcion": "Analizar el historial de trades y proponer ajustes de parámetros.",
+          "proceso": [
+            "1. Cada 20 trades, ejecutar TradeMemory.analyze_performance_by_regime()",
+            "2. Si el win rate en régimen TRENDING_UP < 30%, aumentar el ADX threshold de suspensión de 25 a 20",
+            "3. Si el win rate general < 45%, aumentar el Z-Score threshold de 1.3 a 1.5",
+            "4. Si el Profit Factor > 2.5 durante 30 días, considerar reducir el KELLY_FRACTION (hay margen para ser más conservador)",
+            "5. Generar un resumen en lenguaje natural de los últimos 20 trades",
+            "6. Incluir ese resumen como contexto adicional en el prompt del agente ejecutor"
+          ],
+          "resumen_para_ia_ejemplo": "En los últimos 20 trades: Win Rate=60%, mejor performance en régimen RANGING con Z-Score > 1.5 y funding rate negativo. Peor performance cuando OBI < 0.1 (señal débil). Recomendación: aumentar umbral OBI mínimo a 0.2."
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-9",
+      "nombre": "Observabilidad — Dashboard y Alertas",
+      "descripcion": "Construir el sistema de monitoreo completo. Un bot ciego es un bot peligroso. Necesitas saber exactamente qué está haciendo en todo momento.",
+      "duracion_estimada": "4-5 días",
+      "milestone": {
+        "id": "M9",
+        "nombre": "Sistema de monitoreo completo 24/7",
+        "criterios_de_exito": [
+          "Dashboard muestra todas las métricas cuantitativas en tiempo real",
+          "Alertas Telegram llegan en < 5 segundos ante eventos críticos",
+          "Logs JSON estructurados para cada decisión del bot",
+          "Las métricas se actualizan sin refrescar la página (websocket o polling)",
+          "El dashboard es accesible remotamente desde cualquier dispositivo"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F9-P1",
+          "titulo": "Crear metrics_engine.py — Cálculo de métricas cuantitativas",
+          "metricas_a_calcular": {
+            "metricas_retorno": [
+              "Total Return % desde inicio",
+              "Retorno anualizado (CAGR)",
+              "Retorno del día / semana / mes actual"
+            ],
+            "metricas_riesgo": [
+              "Sharpe Ratio (anualizado, ventana rodante 30 días)",
+              "Sortino Ratio (penaliza solo volatilidad negativa)",
+              "Calmar Ratio (CAGR / Max Drawdown)",
+              "Max Drawdown absoluto y porcentual",
+              "Drawdown Duration (días para recuperarse del peor drawdown)",
+              "Value at Risk 95% (pérdida esperada en el 5% peor de los casos)"
+            ],
+            "metricas_operacionales": [
+              "Win Rate total y por régimen",
+              "Average Win / Average Loss",
+              "Profit Factor (avg_win / avg_loss)",
+              "Expectancy por trade en USDT",
+              "Número de trades abiertos este mes",
+              "Average holding time por trade",
+              "Tasa de activación de circuit breakers"
+            ],
+            "metricas_ia": [
+              "Tasa de APPROVE del agente técnico",
+              "Tasa de APPROVE del agente de riesgo",
+              "Tasa de REJECT del agente adversarial",
+              "Accuracy del ML predictor en los últimos 30 días",
+              "Costo acumulado en APIs de IA"
+            ]
+          }
+        },
+        {
+          "paso_id": "F9-P2",
+          "titulo": "Expandir visualizer.py con dashboard completo",
+          "descripcion": "Dashboard HTML con Plotly que muestra todas las métricas en tiempo real.",
+          "secciones": [
+            "Equity Curve con drawdown destacado",
+            "Tabla de métricas cuantitativas (Sharpe, Calmar, etc.)",
+            "Últimos 10 trades con P&L y contexto",
+            "Estado actual del régimen de mercado",
+            "Historial de decisiones de los agentes IA",
+            "Gráfica de distribución de returns",
+            "Heatmap de performance por hora del día / día de semana",
+            "Status de circuit breakers (verde = activo, rojo = disparado)"
+          ]
+        },
+        {
+          "paso_id": "F9-P3",
+          "titulo": "Crear telegram_alerts.py — Alertas en tiempo real",
+          "clase": "TelegramAlerter",
+          "alertas_a_implementar": [
+            "TRADE_OPENED: símbolo, dirección, precio, tamaño, SL, TP, régimen, confidence_score",
+            "TRADE_CLOSED: símbolo, resultado (win/loss), P&L en USDT y %, duración, razón de cierre",
+            "CIRCUIT_BREAKER_TRIGGERED: nivel disparado, equity actual, drawdown, acción tomada",
+            "REGIME_CHANGE: de qué régimen a cuál, confianza del HMM",
+            "DAILY_REPORT: resumen diario automático a las 23:59 UTC con todas las métricas del día",
+            "ERROR_CRITICO: cualquier excepción no manejada que amenace la operación del bot",
+            "BOT_STARTED / BOT_STOPPED: log de inicio y parada del bot"
+          ]
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-10",
+      "nombre": "Paper Trading — Validación en Tiempo Real",
+      "descripcion": "30 días de operación continua en entorno simulado con datos reales pero sin capital real. Este paso es OBLIGATORIO y no negociable.",
+      "duracion_estimada": "30-45 días (el tiempo mínimo no se puede comprimir)",
+      "milestone": {
+        "id": "M10",
+        "nombre": "30 días de paper trading exitoso",
+        "criterios_de_exito": [
+          "El bot opera 30 días consecutivos sin errores críticos no manejados",
+          "Las métricas de paper trading son consistentes con el out-of-sample del backtest (diferencia < 30%)",
+          "Todas las alertas de Telegram funcionan correctamente",
+          "Al menos 1 circuit breaker se dispara y el bot se comporta correctamente",
+          "El bot se reconecta automáticamente tras al menos 2 interrupciones de red simuladas",
+          "El Sharpe Ratio del paper trading > 1.5",
+          "El max drawdown del paper trading < 18%",
+          "El WebSocket no pierde datos más de 5 minutos en total durante los 30 días"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F10-P1",
+          "titulo": "Configurar Binance Testnet",
+          "instrucciones": [
+            "1. Ir a testnet.binancefuture.com y crear cuenta testnet",
+            "2. Generar API keys del testnet (diferentes a las de producción)",
+            "3. Cambiar TRADING_MODE=TESTNET en el .env",
+            "4. Solicitar USDT de testnet en el faucet de Binance",
+            "5. Verificar que todas las órdenes van al testnet y no a producción"
+          ]
+        },
+        {
+          "paso_id": "F10-P2",
+          "titulo": "Protocolo de monitoreo durante paper trading",
+          "frecuencia_revision": {
+            "diario": "Revisar el reporte diario de Telegram. Verificar que el dashboard está actualizado.",
+            "semanal": "Comparar métricas acumuladas de paper trading vs predicción del backtest. Investigar cualquier divergencia > 15%.",
+            "ante_evento": "Revisar el comportamiento del bot ante noticias importantes (FOMC, datos macroeconómicos, hacks de exchanges)"
+          },
+          "log_diario_requerido": "Mantener un log manual de observaciones: ¿El bot tomó decisiones que parecen razonables? ¿Hubo errores en la ejecución? ¿Las alertas llegaron?"
+        },
+        {
+          "paso_id": "F10-P3",
+          "titulo": "Criterios de FRACASO del paper trading",
+          "descripcion": "Si cualquiera de estas condiciones ocurre, reiniciar paper trading desde cero después de corregir el problema.",
+          "criterios_fracaso": [
+            "El bot abre 2 posiciones simultáneas (bug crítico en el Risk Guardian)",
+            "El bot no respeta un circuit breaker disparado",
+            "Pérdida de datos de WebSocket de más de 30 minutos sin reconexión",
+            "El max drawdown supera el 22% en paper trading",
+            "El bot ejecuta una orden en producción en lugar del testnet (error gravísimo)",
+            "El proceso del bot crashea y no se reinicia automáticamente"
+          ]
+        }
+      ]
+    },
+
+    {
+      "fase_id": "FASE-11",
+      "nombre": "Producción — Despliegue Controlado con Capital Real",
+      "descripcion": "Solo llegar aquí después de completar la Fase 10 exitosamente. El despliegue en producción es gradual y controlado.",
+      "duracion_estimada": "Indefinida (operación continua)",
+      "milestone": {
+        "id": "M11",
+        "nombre": "Bot en producción con capital real, gestionado de forma profesional",
+        "criterios_de_exito": [
+          "Primer mes con capital mínimo (máximo 5% del capital total disponible)",
+          "Las métricas de producción coinciden con paper trading (diferencia < 25%)",
+          "Segundo mes con capital al 25% si el primer mes fue exitoso",
+          "Capital completo solo después de 3 meses consecutivos con Sharpe > 1.5",
+          "Revisión mensual de parámetros y reentrenamiento de modelos ML"
+        ]
+      },
+      "pasos": [
+        {
+          "paso_id": "F11-P1",
+          "titulo": "Configuración de seguridad pre-producción",
+          "checklist_obligatorio": [
+            "API Keys de Binance con SOLO permiso de Futures Trading. Nunca Withdrawal.",
+            "IP del servidor whitelisteada en las API keys de Binance",
+            "Variables de entorno en el servidor (no en archivos locales)",
+            "Backup automático diario de la base de datos SQLite",
+            "VPS en AWS Singapore o Tokyo para baja latencia a Binance",
+            "Proceso del bot como systemd service con restart automático",
+            "Firewall configurado: solo puertos necesarios abiertos",
+            "Rotación de API keys programada cada 60 días"
+          ]
+        },
+        {
+          "paso_id": "F11-P2",
+          "titulo": "Protocolo de despliegue gradual",
+          "etapas": {
+            "mes_1": {
+              "capital": "5% del capital total disponible",
+              "apalancamiento": "X2 máximo",
+              "criterio_continuar": "Drawdown < 8% y al menos 20 trades ejecutados"
+            },
+            "mes_2": {
+              "capital": "25% del capital total si mes 1 exitoso",
+              "apalancamiento": "X3 máximo",
+              "criterio_continuar": "Sharpe > 1.2 acumulado y drawdown < 12%"
+            },
+            "mes_3_6": {
+              "capital": "50% del capital si mes 2 exitoso",
+              "apalancamiento": "X3-5 máximo según volatilidad del régimen",
+              "criterio_continuar": "Sharpe > 1.5 acumulado a 3 meses"
+            },
+            "mes_7_en_adelante": {
+              "capital": "Hasta el 100% si el track record lo justifica",
+              "apalancamiento": "Según Kelly Criterion y volatilidad de régimen",
+              "nota": "NUNCA más de X8. El capital y el sueño nocturno no son incompatibles."
+            }
+          }
+        },
+        {
+          "paso_id": "F11-P3",
+          "titulo": "Calendario de mantenimiento mensual",
+          "tareas_mensuales": [
+            "Semana 1: Revisar métricas del mes anterior. Generar reporte.",
+            "Semana 1: Comparar performance por régimen. ¿Algún régimen consistentemente malo?",
+            "Semana 2: Reentrenar modelos ML con datos del mes nuevo.",
+            "Semana 2: Reentrenar HMM con datos actualizados.",
+            "Semana 3: Revisar y ajustar parámetros del config.py si el análisis lo justifica.",
+            "Semana 3: Rotar API keys de todos los servicios.",
+            "Semana 4: Backup completo del proyecto, modelos y base de datos.",
+            "Semana 4: Actualizar librerías (verificar compatibilidad antes de actualizar en producción)."
+          ]
+        }
+      ]
+    }
+  ],
+
+  "resumen_comparativo_fuentes": {
+    "descripcion": "Puntos donde Claude y Perplexity coinciden, difieren, y la decisión tomada en este roadmap",
+    "coincidencias": [
+      "Walk-forward optimization es obligatorio (ambos coinciden)",
+      "Kelly Criterion para position sizing (ambos coinciden)",
+      "Circuit breakers ante drawdown (ambos coinciden)",
+      "Paper trading 30 días mínimo (ambos coinciden)",
+      "Multi-exchange con CCXT (ambos coinciden)",
+      "VectorBT para backtesting (ambos coinciden)",
+      "Trailing stops dinámicos (ambos coinciden)",
+      "Monte Carlo simulation (ambos coinciden)"
+    ],
+    "divergencias_resueltas": {
+      "ml_vs_llm": {
+        "perplexity": "Usar ML local (LSTM/DQN) y eliminar LLMs por costo y latencia",
+        "claude_original": "Mantener LLMs como capa cognitiva principal",
+        "decision_roadmap": "AMBOS: ML local para señales de alta frecuencia (latencia ms), LLMs para validación cognitiva (latencia segundos). El ML filtra el 80% de las señales; los LLMs evalúan el 20% que pasa el filtro inicial."
+      },
+      "apalancamiento": {
+        "perplexity": "X3-5 en live vs X8 simulado",
+        "claude_original": "No especificaba límite explícito",
+        "decision_roadmap": "X2 en mes 1, X3 en mes 2-6, máximo X5 después. NUNCA X8 en producción real."
+      },
+      "win_rate_proyectado": {
+        "perplexity": "78%+ con ML",
+        "evaluacion": "El 78% es estadísticamente irreal para una estrategia de futuros con comisiones y slippage. El roadmap usa 48-55% como objetivo realista con ratio R:R de 1:3.5",
+        "decision_roadmap": "Objetivo win rate 48-55% con profit factor > 1.8. El win rate alto no garantiza rentabilidad si el ratio R:R es malo."
+      },
+      "freqtrade": {
+        "perplexity": "Usar Freqtrade como plataforma de live trading",
+        "evaluacion": "Freqtrade es excelente para estrategias estándar pero limitado para arquitecturas multi-agente personalizadas",
+        "decision_roadmap": "Freqtrade se evalúa como alternativa en Fase 10 (paper trading). Si la estrategia es compatible, se puede usar para el execution layer. Si no, se mantiene el order_executor.py personalizado."
+      }
+    }
+  },
+
+  "metricas_objetivo_version_70": {
+    "backtest_out_of_sample": {
+      "sharpe_ratio": "> 1.8",
+      "calmar_ratio": "> 1.5",
+      "max_drawdown": "< 18%",
+      "profit_factor": "> 1.5",
+      "win_rate": "> 45%",
+      "minimo_trades_para_validez": 100
+    },
+    "paper_trading_30_dias": {
+      "sharpe_ratio": "> 1.5",
+      "max_drawdown": "< 20%",
+      "errores_criticos": 0,
+      "uptime": "> 99%"
+    },
+    "produccion_mes_3": {
+      "sharpe_ratio": "> 1.5",
+      "calmar_ratio": "> 1.5",
+      "max_drawdown": "< 15%",
+      "profit_factor": "> 1.8",
+      "retorno_anualizado_realista": "20-40%",
+      "nota": "Retornos del 50%+ son posibles en años excepcionales pero no deben ser el objetivo de planificación"
+    }
+  },
+
+  "nuevos_archivos_a_crear": [
+    "core/exchange_manager.py",
+    "core/websocket_streamer.py",
+    "core/signal_engine.py",
+    "core/order_flow.py",
+    "core/regime_detector.py",
+    "core/ml_predictor.py",
+    "core/agent_orchestrator.py",
+    "core/risk_guardian.py",
+    "core/position_sizer.py",
+    "core/correlacion_guard.py",
+    "core/exit_manager.py",
+    "core/order_executor.py",
+    "core/trade_memory.py",
+    "core/self_improver.py",
+    "utils/metrics_engine.py",
+    "utils/telegram_alerts.py",
+    "utils/data_cleaner.py",
+    "scripts/init_database.py",
+    "scripts/download_historical_data.py",
+    "scripts/retrain_models.py",
+    "config.py",
+    "tests/test_data_loader.py",
+    "tests/test_indicators.py",
+    "tests/test_risk_guardian.py",
+    "tests/test_position_sizer.py",
+    "tests/test_signal_engine.py"
+  ],
+
+  "archivos_a_refactorizar": [
+    "core/data_loader.py → Reemplazar por exchange_manager.py con CCXT",
+    "core/indicators.py → Expandir con nuevos indicadores",
+    "core/model.py → Integrar con signal_engine.py y regime_detector.py",
+    "core/gemini_engine.py → Refactorizar como agentes en agent_orchestrator.py",
+    "core/backtest.py → Eliminar lookahead bias, integrar VectorBT",
+    "utils/visualizer.py → Expandir con métricas cuantitativas completas",
+    "run_backtest.py → Nuevo punto de entrada orquestando todos los módulos"
+  ],
+
+  "duracion_total_estimada": {
+    "fase_0": "3-5 días",
+    "fase_1": "5-7 días",
+    "fase_2": "7-10 días",
+    "fase_3": "10-14 días",
+    "fase_4": "5-7 días",
+    "fase_5": "5-7 días",
+    "fase_6": "7-10 días",
+    "fase_7": "4-5 días",
+    "fase_8": "5-7 días",
+    "fase_9": "4-5 días",
+    "fase_10": "30-45 días (no comprimible)",
+    "fase_11": "Indefinida (operación continua)",
+    "total_hasta_produccion": "90-120 días dedicando 2-4 horas diarias",
+    "nota": "La Fase 10 (paper trading) no puede acelerarse. El tiempo de operación real es la única validación que importa."
+  }
+}

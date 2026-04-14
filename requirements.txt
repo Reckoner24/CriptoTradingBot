@@ -1,0 +1,45 @@
+# Data & Exchange
+# ccxt==4.3.1
+# python-binance==1.0.19
+# websockets==12.0
+# aiohttp==3.9.3
+
+# # Backtesting
+# vectorbt==0.26.2
+# backtesting==0.3.3
+
+# Data Science
+pandas
+numpy
+scipy
+scikit-learn
+
+# Machine Learning
+torch
+xgboost
+hmmlearn
+optuna
+
+# Indicadores Técnicos
+pandas-ta
+ta
+
+# IA / LLMs
+anthropic
+groq
+google-genai
+
+# Observabilidad
+python-telegram-bot
+plotly
+rich
+
+# Infraestructura
+python-dotenv
+asyncio
+sqlalchemy
+aiosqlite
+
+# Testing
+pytest
+pytest-asyncio

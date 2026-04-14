@@ -1,0 +1,1 @@
+# Archivo vacío inicial para position_sizer

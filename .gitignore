@@ -1,0 +1,7 @@
+.env
+data/
+logs/
+models/
+__pycache__/
+*.pyc
+.entorno*/
