@@ -1,1 +1,0 @@
-# Archivo vacío inicial para regime_detector

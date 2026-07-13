@@ -96,14 +96,22 @@ for sym in symbols:
     # Celda 2: Entrenamiento y Predicción Independiente por Moneda
     code_2 = """\
 # Diccionario de Parámetros Ultra-Específicos para cada Moneda
-# Solana mantiene EXACTAMENTE los parámetros con los que logró el récord histórico.
-# BTC, ETH y BNB tienen parámetros optimizados para su propio ritmo de volatilidad.
-params_per_symbol = {
-    'SOL/USDT': {'max_depth': 4, 'learning_rate': 0.07805649487352909, 'reg_alpha': 4.35863575668277, 'reg_lambda': 4.446290706296152, 'confidence': 0.6883034798215051, 'sl_mult': 1.5962207601651157, 'tp_mult': 4.867826554945944, 'risk_pct': 0.3127042793669176},
-    'BTC/USDT': {'max_depth': 3, 'learning_rate': 0.03626095384839472, 'reg_alpha': 6.4185163217464485, 'reg_lambda': 1.92245406637491, 'confidence': 0.5107110443659603, 'sl_mult': 3.4879568812574675, 'tp_mult': 1.0137978172779851, 'risk_pct': 0.23905646922716522},
-    'ETH/USDT': {'max_depth': 3, 'learning_rate': 0.06064998960148327, 'reg_alpha': 1.5034004607030187, 'reg_lambda': 4.638923258978229, 'confidence': 0.5405496235387512, 'sl_mult': 3.0320234756580637, 'tp_mult': 6.069482330560227, 'risk_pct': 0.29515894023584033},
-    'BNB/USDT': {'max_depth': 5, 'learning_rate': 0.1116079356340404, 'reg_alpha': 1.693237919014126, 'reg_lambda': 0.44154923296644116, 'confidence': 0.7433268851141576, 'sl_mult': 5.571861366005772, 'tp_mult': 2.010671787980764, 'risk_pct': 0.17581531382458124},
-}
+import json
+import os
+
+params_file = 'best_params_actualizados.json'
+if os.path.exists(params_file):
+    with open(params_file, 'r') as f:
+        params_per_symbol = json.load(f)
+    print("✅ Parámetros cargados desde auto_optimizer (dinámicos)")
+else:
+    print("⚠️ Usando parámetros predeterminados (hardcoded)")
+    params_per_symbol = {
+        'SOL/USDT': {'max_depth': 4, 'learning_rate': 0.07805649487352909, 'reg_alpha': 4.35863575668277, 'reg_lambda': 4.446290706296152, 'confidence': 0.6883034798215051, 'sl_mult': 1.5962207601651157, 'tp_mult': 4.867826554945944, 'risk_pct': 0.3127042793669176},
+        'BTC/USDT': {'max_depth': 3, 'learning_rate': 0.03626095384839472, 'reg_alpha': 6.4185163217464485, 'reg_lambda': 1.92245406637491, 'confidence': 0.5107110443659603, 'sl_mult': 3.4879568812574675, 'tp_mult': 1.0137978172779851, 'risk_pct': 0.23905646922716522},
+        'ETH/USDT': {'max_depth': 3, 'learning_rate': 0.06064998960148327, 'reg_alpha': 1.5034004607030187, 'reg_lambda': 4.638923258978229, 'confidence': 0.5405496235387512, 'sl_mult': 3.0320234756580637, 'tp_mult': 6.069482330560227, 'risk_pct': 0.29515894023584033},
+        'BNB/USDT': {'max_depth': 5, 'learning_rate': 0.1116079356340404, 'reg_alpha': 1.693237919014126, 'reg_lambda': 0.44154923296644116, 'confidence': 0.7433268851141576, 'sl_mult': 5.571861366005772, 'tp_mult': 2.010671787980764, 'risk_pct': 0.17581531382458124},
+    }
 
 features = ['EMA_CROSS', 'DMP', 'DMN', 'SUPERTREND_DIR', 'MACD_HIST', 'BB_POS', 'RET_1', 'RET_3', 'RSI_Z', 'ADX_Z', 'MACD_Z', 'BB_WIDTH_Z']
 
