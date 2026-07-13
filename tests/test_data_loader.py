@@ -11,15 +11,14 @@ def test_exchange_manager_init():
     assert manager.primary_name == 'binance'
     assert 'bybit' in manager.secondary_names
 
-@patch('ccxt.binance.fetch_ohlcv')
-def test_fetch_ohlcv_success(mock_fetch):
+def test_fetch_ohlcv_success():
     manager = ExchangeManager(primary_exchange='binance')
     
     # Mocking CCXT output (timestamp, open, high, low, close, volume)
-    mock_fetch.return_value = [
+    manager.exchanges['binance'].fetch_ohlcv = MagicMock(return_value=[
         [1672531200000, 16000, 16100, 15900, 16050, 100],
         [1672534800000, 16050, 16200, 16000, 16150, 150]
-    ]
+    ])
     
     df = manager.fetch_ohlcv('BTC/USDT', '1h', limit=2)
     
@@ -30,18 +29,18 @@ def test_fetch_ohlcv_success(mock_fetch):
     assert df.index.name == 'timestamp'
     assert df.iloc[0]['close'] == 16050.0
 
-@patch('ccxt.binance.fetch_ohlcv')
-@patch('ccxt.bybit.fetch_ohlcv')
-def test_fetch_ohlcv_fallback(mock_bybit_fetch, mock_binance_fetch):
+def test_fetch_ohlcv_fallback():
     manager = ExchangeManager(primary_exchange='binance', secondary_exchanges=['bybit'])
     
     # Simulate Binance failure
-    mock_binance_fetch.side_effect = ccxt.NetworkError("Binance is down")
+    mock_binance_fetch = MagicMock(side_effect=ccxt.NetworkError("Binance is down"))
+    manager.exchanges['binance'].fetch_ohlcv = mock_binance_fetch
     
     # Simulate Bybit success
-    mock_bybit_fetch.return_value = [
+    mock_bybit_fetch = MagicMock(return_value=[
         [1672531200000, 16000, 16100, 15900, 16050, 100]
-    ]
+    ])
+    manager.exchanges['bybit'].fetch_ohlcv = mock_bybit_fetch
     
     df = manager.fetch_ohlcv('BTC/USDT', '1h', limit=1)
     

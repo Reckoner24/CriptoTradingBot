@@ -1,0 +1,445 @@
+{
+  "settings": {
+    "bars_per_week": 672,
+    "outer_weeks": 8,
+    "validation_weeks": 4,
+    "train_bars": 8064,
+    "data_bars": 25000,
+    "horizon_bars": 30,
+    "embargo_bars": 2,
+    "stop_atr": 1.5,
+    "target_atr": 2.25,
+    "fee_rate": 0.0006,
+    "slippage": 0.0004,
+    "risk_per_trade": 0.005,
+    "max_notional_multiple": 2.0,
+    "starting_capital_per_asset": 2500.0,
+    "minimum_weekly_return": 0.15
+  },
+  "assets": {
+    "BTC": {
+      "trades": 15,
+      "pnl": -172.96898862518145,
+      "return": -0.06918759545007258
+    },
+    "ETH": {
+      "trades": 11,
+      "pnl": -166.74810174418636,
+      "return": -0.06669924069767454
+    },
+    "BNB": {
+      "trades": 21,
+      "pnl": -2.7874763739494277,
+      "return": -0.0011149905495797712
+    },
+    "SOL": {
+      "trades": 16,
+      "pnl": -28.558960400978414,
+      "return": -0.011423584160391366
+    }
+  },
+  "weeks": [
+    {
+      "week": 1,
+      "assets": {
+        "BTC": {
+          "confidence": 0.6,
+          "initial_capital": 2500.0,
+          "final_capital": 2375.6403508565904,
+          "return": -0.04974385965736383,
+          "trades": 9.0,
+          "max_drawdown": 0.05288293641636188,
+          "win_rate": 0.1111111111111111,
+          "profit_factor": 0.062466286510614054
+        },
+        "ETH": {
+          "confidence": 0.65,
+          "initial_capital": 2500.0,
+          "final_capital": 2479.7435048299203,
+          "return": -0.00810259806803193,
+          "trades": 1.0,
+          "max_drawdown": 0.00810259806803193,
+          "win_rate": 0.0,
+          "profit_factor": 0.0
+        },
+        "BNB": {
+          "confidence": 0.55,
+          "initial_capital": 2500.0,
+          "final_capital": 2525.6164081259444,
+          "return": 0.010246563250377871,
+          "trades": 2.0,
+          "max_drawdown": 0.0,
+          "win_rate": 1.0,
+          "profit_factor": null
+        },
+        "SOL": {
+          "confidence": 0.6,
+          "initial_capital": 2500.0,
+          "final_capital": 2482.789095675362,
+          "return": -0.006884361729855071,
+          "trades": 1.0,
+          "max_drawdown": 0.006884361729855071,
+          "win_rate": 0.0,
+          "profit_factor": 0.0
+        }
+      },
+      "portfolio_start": 10000.0,
+      "pnl": -136.21064051218264,
+      "portfolio_capital": 9863.789359487817,
+      "portfolio_return": -0.013621064051218263
+    },
+    {
+      "week": 2,
+      "assets": {
+        "BTC": {
+          "confidence": 0.65,
+          "initial_capital": 2465.9473398719542,
+          "final_capital": 2450.370596971775,
+          "return": -0.006316737850934118,
+          "trades": 1.0,
+          "max_drawdown": 0.006316737850934118,
+          "win_rate": 0.0,
+          "profit_factor": 0.0
+        },
+        "ETH": {
+          "confidence": 0.6,
+          "initial_capital": 2465.9473398719542,
+          "final_capital": 2332.9553922169584,
+          "return": -0.053931381868803974,
+          "trades": 9.0,
+          "max_drawdown": 0.053931381868803974,
+          "win_rate": 0.1111111111111111,
+          "profit_factor": 0.053820761274688475
+        },
+        "BNB": {
+          "confidence": 0.55,
+          "initial_capital": 2465.9473398719542,
+          "final_capital": 2480.625809968831,
+          "return": 0.005952466972648063,
+          "trades": 1.0,
+          "max_drawdown": 0.0,
+          "win_rate": 1.0,
+          "profit_factor": null
+        },
+        "SOL": {
+          "confidence": 0.55,
+          "initial_capital": 2465.9473398719542,
+          "final_capital": 2465.9473398719542,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        }
+      },
+      "portfolio_start": 9863.789359487817,
+      "pnl": -133.89022045829824,
+      "portfolio_capital": 9729.89913902952,
+      "portfolio_return": -0.01357391318677253
+    },
+    {
+      "week": 3,
+      "assets": {
+        "BTC": {
+          "confidence": 0.65,
+          "initial_capital": 2432.47478475738,
+          "final_capital": 2432.47478475738,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "ETH": {
+          "confidence": 0.6,
+          "initial_capital": 2432.47478475738,
+          "final_capital": 2432.47478475738,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "BNB": {
+          "confidence": 0.55,
+          "initial_capital": 2432.47478475738,
+          "final_capital": 2432.47478475738,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "SOL": {
+          "confidence": 0.55,
+          "initial_capital": 2432.47478475738,
+          "final_capital": 2432.47478475738,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        }
+      },
+      "portfolio_start": 9729.89913902952,
+      "pnl": 0.0,
+      "portfolio_capital": 9729.89913902952,
+      "portfolio_return": 0.0
+    },
+    {
+      "week": 4,
+      "assets": {
+        "BTC": {
+          "confidence": 0.65,
+          "initial_capital": 2432.47478475738,
+          "final_capital": 2432.47478475738,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "ETH": {
+          "confidence": 0.6,
+          "initial_capital": 2432.47478475738,
+          "final_capital": 2432.47478475738,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "BNB": {
+          "confidence": 0.55,
+          "initial_capital": 2432.47478475738,
+          "final_capital": 2445.104239533178,
+          "return": 0.0051920187847116495,
+          "trades": 7.0,
+          "max_drawdown": 0.011830800059069557,
+          "win_rate": 0.5714285714285714,
+          "profit_factor": 1.26626957581602
+        },
+        "SOL": {
+          "confidence": 0.55,
+          "initial_capital": 2432.47478475738,
+          "final_capital": 2455.323465059831,
+          "return": 0.009393182797054145,
+          "trades": 3.0,
+          "max_drawdown": 0.0,
+          "win_rate": 1.0,
+          "profit_factor": null
+        }
+      },
+      "portfolio_start": 9729.89913902952,
+      "pnl": 35.478135078249124,
+      "portfolio_capital": 9765.377274107768,
+      "portfolio_return": 0.003646300395441487
+    },
+    {
+      "week": 5,
+      "assets": {
+        "BTC": {
+          "confidence": 0.65,
+          "initial_capital": 2441.344318526942,
+          "final_capital": 2441.344318526942,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "ETH": {
+          "confidence": 0.6,
+          "initial_capital": 2441.344318526942,
+          "final_capital": 2427.8446596078306,
+          "return": -0.005529600563371928,
+          "trades": 1.0,
+          "max_drawdown": 0.005529600563371928,
+          "win_rate": 0.0,
+          "profit_factor": 0.0
+        },
+        "BNB": {
+          "confidence": 0.55,
+          "initial_capital": 2441.344318526942,
+          "final_capital": 2409.2710464720058,
+          "return": -0.013137545495544245,
+          "trades": 7.0,
+          "max_drawdown": 0.013137545495544245,
+          "win_rate": 0.42857142857142855,
+          "profit_factor": 0.3842349880357246
+        },
+        "SOL": {
+          "confidence": 0.55,
+          "initial_capital": 2441.344318526942,
+          "final_capital": 2457.100053448625,
+          "return": 0.006453712736100181,
+          "trades": 2.0,
+          "max_drawdown": 0.0005150021302402497,
+          "win_rate": 0.5,
+          "profit_factor": 13.444661224729835
+        }
+      },
+      "portfolio_start": 9765.377274107768,
+      "pnl": -29.81719605236458,
+      "portfolio_capital": 9735.560078055403,
+      "portfolio_return": -0.003053358330704011
+    },
+    {
+      "week": 6,
+      "assets": {
+        "BTC": {
+          "confidence": 0.6,
+          "initial_capital": 2433.890019513851,
+          "final_capital": 2433.890019513851,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "ETH": {
+          "confidence": 0.6,
+          "initial_capital": 2433.890019513851,
+          "final_capital": 2433.890019513851,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "BNB": {
+          "confidence": 0.55,
+          "initial_capital": 2433.890019513851,
+          "final_capital": 2410.2514821962186,
+          "return": -0.009712245470464564,
+          "trades": 4.0,
+          "max_drawdown": 0.009712245470464564,
+          "win_rate": 0.25,
+          "profit_factor": 0.3973268866347444
+        },
+        "SOL": {
+          "confidence": 0.55,
+          "initial_capital": 2433.890019513851,
+          "final_capital": 2373.9921052145305,
+          "return": -0.02460995107383057,
+          "trades": 6.0,
+          "max_drawdown": 0.027552504977013337,
+          "win_rate": 0.16666666666666666,
+          "profit_factor": 0.10679805359395518
+        }
+      },
+      "portfolio_start": 9735.560078055403,
+      "pnl": -83.53645161695249,
+      "portfolio_capital": 9652.023626438451,
+      "portfolio_return": -0.008580549136073761
+    },
+    {
+      "week": 7,
+      "assets": {
+        "BTC": {
+          "confidence": 0.55,
+          "initial_capital": 2413.005906609613,
+          "final_capital": 2410.511265101727,
+          "return": -0.001033831496662474,
+          "trades": 2.0,
+          "max_drawdown": 0.0069653485635015056,
+          "win_rate": 0.5,
+          "profit_factor": 0.8515750522407665
+        },
+        "ETH": {
+          "confidence": 0.65,
+          "initial_capital": 2413.005906609613,
+          "final_capital": 2413.005906609613,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "BNB": {
+          "confidence": 0.65,
+          "initial_capital": 2413.005906609613,
+          "final_capital": 2413.005906609613,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "SOL": {
+          "confidence": 0.6,
+          "initial_capital": 2413.005906609613,
+          "final_capital": 2430.3064336717753,
+          "return": 0.007169699425423559,
+          "trades": 2.0,
+          "max_drawdown": 0.0,
+          "win_rate": 1.0,
+          "profit_factor": null
+        }
+      },
+      "portfolio_start": 9652.023626438451,
+      "pnl": 14.805885554276756,
+      "portfolio_capital": 9666.829511992728,
+      "portfolio_return": 0.0015339669821902472
+    },
+    {
+      "week": 8,
+      "assets": {
+        "BTC": {
+          "confidence": 0.55,
+          "initial_capital": 2416.707377998182,
+          "final_capital": 2386.1694229244754,
+          "return": -0.012636182332923518,
+          "trades": 3.0,
+          "max_drawdown": 0.012636182332923518,
+          "win_rate": 0.3333333333333333,
+          "profit_factor": 0.07206039735549849
+        },
+        "ETH": {
+          "confidence": 0.65,
+          "initial_capital": 2416.707377998182,
+          "final_capital": 2416.707377998182,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "BNB": {
+          "confidence": 0.65,
+          "initial_capital": 2416.707377998182,
+          "final_capital": 2416.707377998182,
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0,
+          "win_rate": 0.0,
+          "profit_factor": null
+        },
+        "SOL": {
+          "confidence": 0.6,
+          "initial_capital": 2416.707377998182,
+          "final_capital": 2409.352293934864,
+          "return": -0.0030434317908237807,
+          "trades": 2.0,
+          "max_drawdown": 0.007718140580685318,
+          "win_rate": 0.5,
+          "profit_factor": 0.6075270759519004
+        }
+      },
+      "portfolio_start": 9666.829511992728,
+      "pnl": -37.893039137024516,
+      "portfolio_capital": 9628.936472855703,
+      "portfolio_return": -0.003919903530936817
+    }
+  ],
+  "summary": {
+    "portfolio_start": 10000.0,
+    "portfolio_final": 9628.936472855703,
+    "portfolio_return": -0.03710635271442975,
+    "trades": 63,
+    "minimum_weekly_return": -0.013621064051218263,
+    "worst_weekly_return": -0.013621064051218263,
+    "meets_minimum_weekly_return": false,
+    "note": "OOS secuencial; los resultados no constituyen una garant\u00eda de rendimiento futuro."
+  }
+}

@@ -1,0 +1,757 @@
+{
+  "rules": [
+    {
+      "name": "trend_pullback_rsi35",
+      "family": "trend",
+      "adx_min": 20,
+      "rsi_low": 35,
+      "rsi_high": 65,
+      "donchian": 20,
+      "band_std": 2.0,
+      "adx_max": 100.0,
+      "stop_atr": 1.5,
+      "target_atr": 2.25
+    },
+    {
+      "name": "trend_pullback_rsi40",
+      "family": "trend",
+      "adx_min": 22,
+      "rsi_low": 40,
+      "rsi_high": 60,
+      "donchian": 20,
+      "band_std": 2.0,
+      "adx_max": 100.0,
+      "stop_atr": 1.5,
+      "target_atr": 2.25
+    },
+    {
+      "name": "trend_pullback_rsi45",
+      "family": "trend",
+      "adx_min": 25,
+      "rsi_low": 45,
+      "rsi_high": 55,
+      "donchian": 20,
+      "band_std": 2.0,
+      "adx_max": 100.0,
+      "stop_atr": 1.5,
+      "target_atr": 2.25
+    },
+    {
+      "name": "breakout_20",
+      "family": "breakout",
+      "adx_min": 20,
+      "rsi_low": 35.0,
+      "rsi_high": 65.0,
+      "donchian": 20,
+      "band_std": 2.0,
+      "adx_max": 100.0,
+      "stop_atr": 1.5,
+      "target_atr": 2.25
+    },
+    {
+      "name": "breakout_40",
+      "family": "breakout",
+      "adx_min": 25,
+      "rsi_low": 35.0,
+      "rsi_high": 65.0,
+      "donchian": 40,
+      "band_std": 2.0,
+      "adx_max": 100.0,
+      "stop_atr": 1.5,
+      "target_atr": 2.25
+    },
+    {
+      "name": "mean_reversion_2",
+      "family": "mean_reversion",
+      "adx_min": 0.0,
+      "rsi_low": 25,
+      "rsi_high": 75,
+      "donchian": 20,
+      "band_std": 2.0,
+      "adx_max": 20,
+      "stop_atr": 1.5,
+      "target_atr": 2.25
+    },
+    {
+      "name": "mean_reversion_25",
+      "family": "mean_reversion",
+      "adx_min": 0.0,
+      "rsi_low": 20,
+      "rsi_high": 80,
+      "donchian": 20,
+      "band_std": 2.5,
+      "adx_max": 18,
+      "stop_atr": 1.5,
+      "target_atr": 2.25
+    }
+  ],
+  "development": {
+    "trend_pullback_rsi35": {
+      "summary": {
+        "median_weekly_return": -0.030374256980593872,
+        "minimum_weekly_return": -0.07150051291517101,
+        "mean_weekly_return": -0.02868061378757107,
+        "total_trades": 991.0,
+        "maximum_weekly_drawdown": 0.09079362930875645,
+        "meets_15pct_every_week": false
+      },
+      "eligible": false,
+      "weeks": [
+        {
+          "return": 0.02051882836934399,
+          "trades": 56.0,
+          "max_drawdown": 0.020697154882524438
+        },
+        {
+          "return": 0.016388517435013156,
+          "trades": 65.0,
+          "max_drawdown": 0.02857165826471042
+        },
+        {
+          "return": -0.01753301098615556,
+          "trades": 64.0,
+          "max_drawdown": 0.04803234484071872
+        },
+        {
+          "return": -0.04212313956686778,
+          "trades": 64.0,
+          "max_drawdown": 0.06323001556695218
+        },
+        {
+          "return": -0.036503499696225766,
+          "trades": 72.0,
+          "max_drawdown": 0.04966346472070071
+        },
+        {
+          "return": -0.011834309434357565,
+          "trades": 45.0,
+          "max_drawdown": 0.035192007351709464
+        },
+        {
+          "return": -0.044540724810145094,
+          "trades": 84.0,
+          "max_drawdown": 0.09079362930875645
+        },
+        {
+          "return": -0.018681053475891995,
+          "trades": 58.0,
+          "max_drawdown": 0.06153086724303414
+        },
+        {
+          "return": -0.017241164581721702,
+          "trades": 44.0,
+          "max_drawdown": 0.046863540732663744
+        },
+        {
+          "return": -0.05065653260497349,
+          "trades": 58.0,
+          "max_drawdown": 0.06840880995110332
+        },
+        {
+          "return": -0.05470233548664999,
+          "trades": 61.0,
+          "max_drawdown": 0.07669686949826304
+        },
+        {
+          "return": -0.025800764353709982,
+          "trades": 71.0,
+          "max_drawdown": 0.05501427284963878
+        },
+        {
+          "return": -0.07150051291517101,
+          "trades": 61.0,
+          "max_drawdown": 0.08894828377773834
+        },
+        {
+          "return": -0.028467802249381086,
+          "trades": 64.0,
+          "max_drawdown": 0.05512526721751709
+        },
+        {
+          "return": -0.043931604532436636,
+          "trades": 68.0,
+          "max_drawdown": 0.08298853920444327
+        },
+        {
+          "return": -0.03228071171180666,
+          "trades": 56.0,
+          "max_drawdown": 0.04630245570261182
+        }
+      ]
+    },
+    "trend_pullback_rsi40": {
+      "summary": {
+        "median_weekly_return": -0.020188553858761435,
+        "minimum_weekly_return": -0.05890296283963639,
+        "mean_weekly_return": -0.022912191123347414,
+        "total_trades": 797.0,
+        "maximum_weekly_drawdown": 0.07560126263881906,
+        "meets_15pct_every_week": false
+      },
+      "eligible": false,
+      "weeks": [
+        {
+          "return": 0.011899782068197112,
+          "trades": 49.0,
+          "max_drawdown": 0.020697154882524438
+        },
+        {
+          "return": 0.011798284955956306,
+          "trades": 53.0,
+          "max_drawdown": 0.023472824228196854
+        },
+        {
+          "return": -0.017744253898693302,
+          "trades": 56.0,
+          "max_drawdown": 0.04633896630695833
+        },
+        {
+          "return": -0.035941903262083796,
+          "trades": 53.0,
+          "max_drawdown": 0.057514498380110246
+        },
+        {
+          "return": -0.030500798002714796,
+          "trades": 62.0,
+          "max_drawdown": 0.044299345369302134
+        },
+        {
+          "return": -0.006846067720516241,
+          "trades": 34.0,
+          "max_drawdown": 0.02101010995984165
+        },
+        {
+          "return": -0.03614179568677628,
+          "trades": 63.0,
+          "max_drawdown": 0.0682245438925323
+        },
+        {
+          "return": -0.009373557968859442,
+          "trades": 43.0,
+          "max_drawdown": 0.037872413993957244
+        },
+        {
+          "return": -0.010838233403065334,
+          "trades": 34.0,
+          "max_drawdown": 0.04021888637273152
+        },
+        {
+          "return": -0.048401613846890595,
+          "trades": 45.0,
+          "max_drawdown": 0.06589997447390328
+        },
+        {
+          "return": -0.05057910640259819,
+          "trades": 57.0,
+          "max_drawdown": 0.07560126263881906
+        },
+        {
+          "return": -0.01303220525294188,
+          "trades": 60.0,
+          "max_drawdown": 0.03938635314460737
+        },
+        {
+          "return": -0.05890296283963639,
+          "trades": 47.0,
+          "max_drawdown": 0.07555811748317576
+        },
+        {
+          "return": -0.02087687476765443,
+          "trades": 44.0,
+          "max_drawdown": 0.04319004025141471
+        },
+        {
+          "return": -0.031613518995412926,
+          "trades": 54.0,
+          "max_drawdown": 0.061484455058964715
+        },
+        {
+          "return": -0.01950023294986844,
+          "trades": 43.0,
+          "max_drawdown": 0.031605768047203275
+        }
+      ]
+    },
+    "trend_pullback_rsi45": {
+      "summary": {
+        "median_weekly_return": -0.014767045165411191,
+        "minimum_weekly_return": -0.03551755171679477,
+        "mean_weekly_return": -0.014454629031334916,
+        "total_trades": 547.0,
+        "maximum_weekly_drawdown": 0.0559456993706523,
+        "meets_15pct_every_week": false
+      },
+      "eligible": false,
+      "weeks": [
+        {
+          "return": 0.006582103432659275,
+          "trades": 37.0,
+          "max_drawdown": 0.03248217598967351
+        },
+        {
+          "return": 0.013866640812339626,
+          "trades": 38.0,
+          "max_drawdown": 0.023463707826921643
+        },
+        {
+          "return": -0.021235247195387635,
+          "trades": 32.0,
+          "max_drawdown": 0.04538751934150731
+        },
+        {
+          "return": -0.011640650337851,
+          "trades": 32.0,
+          "max_drawdown": 0.02270696644410186
+        },
+        {
+          "return": -0.020933740829890662,
+          "trades": 49.0,
+          "max_drawdown": 0.03411341555823744
+        },
+        {
+          "return": -0.0023326334755718048,
+          "trades": 25.0,
+          "max_drawdown": 0.014879886301957579
+        },
+        {
+          "return": -0.0321435825148636,
+          "trades": 39.0,
+          "max_drawdown": 0.05252524541788084
+        },
+        {
+          "return": 0.00012913922797316846,
+          "trades": 32.0,
+          "max_drawdown": 0.03198907643913673
+        },
+        {
+          "return": -0.010149073712213713,
+          "trades": 24.0,
+          "max_drawdown": 0.045512160681799974
+        },
+        {
+          "return": -0.03370351790756043,
+          "trades": 30.0,
+          "max_drawdown": 0.04800569931614607
+        },
+        {
+          "return": -0.027640405747943075,
+          "trades": 40.0,
+          "max_drawdown": 0.040622130016899405
+        },
+        {
+          "return": -0.000981179902447532,
+          "trades": 38.0,
+          "max_drawdown": 0.027643274751595004
+        },
+        {
+          "return": -0.03551755171679477,
+          "trades": 31.0,
+          "max_drawdown": 0.044587665992828485
+        },
+        {
+          "return": -0.017893439992971383,
+          "trades": 27.0,
+          "max_drawdown": 0.03488722282283374
+        },
+        {
+          "return": -0.02861087677724064,
+          "trades": 43.0,
+          "max_drawdown": 0.0559456993706523
+        },
+        {
+          "return": -0.009070047863594471,
+          "trades": 30.0,
+          "max_drawdown": 0.024040248526762675
+        }
+      ]
+    },
+    "breakout_20": {
+      "summary": {
+        "median_weekly_return": -0.031443019479079,
+        "minimum_weekly_return": -0.057699142958953814,
+        "mean_weekly_return": -0.026031416945037134,
+        "total_trades": 1033.0,
+        "maximum_weekly_drawdown": 0.07816682467093616,
+        "meets_15pct_every_week": false
+      },
+      "eligible": false,
+      "weeks": [
+        {
+          "return": -0.03614186215867968,
+          "trades": 77.0,
+          "max_drawdown": 0.059083100472666183
+        },
+        {
+          "return": -0.013211693921724749,
+          "trades": 71.0,
+          "max_drawdown": 0.042517687360641765
+        },
+        {
+          "return": -0.013646639996977822,
+          "trades": 72.0,
+          "max_drawdown": 0.051755462159799315
+        },
+        {
+          "return": -0.03622187778456276,
+          "trades": 67.0,
+          "max_drawdown": 0.07458439506265391
+        },
+        {
+          "return": 0.030870215571289994,
+          "trades": 69.0,
+          "max_drawdown": 0.02388045182862375
+        },
+        {
+          "return": -0.048592992390111,
+          "trades": 68.0,
+          "max_drawdown": 0.06515145509753506
+        },
+        {
+          "return": -0.057699142958953814,
+          "trades": 69.0,
+          "max_drawdown": 0.07816682467093616
+        },
+        {
+          "return": -0.024054979403457855,
+          "trades": 52.0,
+          "max_drawdown": 0.05200332120347062
+        },
+        {
+          "return": -0.00447592232741445,
+          "trades": 52.0,
+          "max_drawdown": 0.02991386767164106
+        },
+        {
+          "return": -0.03825567865377985,
+          "trades": 62.0,
+          "max_drawdown": 0.05380245285684648
+        },
+        {
+          "return": -0.021210248880059873,
+          "trades": 68.0,
+          "max_drawdown": 0.05689184177848983
+        },
+        {
+          "return": -0.016458274447504834,
+          "trades": 73.0,
+          "max_drawdown": 0.04937286912624261
+        },
+        {
+          "return": -0.03132198015747975,
+          "trades": 50.0,
+          "max_drawdown": 0.054124453233178826
+        },
+        {
+          "return": -0.040508548143255635,
+          "trades": 58.0,
+          "max_drawdown": 0.04970674180416734
+        },
+        {
+          "return": -0.03156405880067825,
+          "trades": 59.0,
+          "max_drawdown": 0.069557657839596
+        },
+        {
+          "return": -0.03400898666724381,
+          "trades": 66.0,
+          "max_drawdown": 0.060999867771732386
+        }
+      ]
+    },
+    "breakout_40": {
+      "summary": {
+        "median_weekly_return": -0.015580883741907026,
+        "minimum_weekly_return": -0.035961935627114416,
+        "mean_weekly_return": -0.015424166764766078,
+        "total_trades": 665.0,
+        "maximum_weekly_drawdown": 0.05874225123937338,
+        "meets_15pct_every_week": false
+      },
+      "eligible": false,
+      "weeks": [
+        {
+          "return": -0.008035014164346294,
+          "trades": 52.0,
+          "max_drawdown": 0.04601657540535309
+        },
+        {
+          "return": -0.0024265362602894636,
+          "trades": 51.0,
+          "max_drawdown": 0.02565392017142709
+        },
+        {
+          "return": -0.01683615300978694,
+          "trades": 52.0,
+          "max_drawdown": 0.048222671687431884
+        },
+        {
+          "return": -0.0264386064450024,
+          "trades": 43.0,
+          "max_drawdown": 0.048965284201872405
+        },
+        {
+          "return": 0.018534490491385003,
+          "trades": 55.0,
+          "max_drawdown": 0.023373480019451387
+        },
+        {
+          "return": -0.035961935627114416,
+          "trades": 43.0,
+          "max_drawdown": 0.04872579285211309
+        },
+        {
+          "return": -0.021949802669470414,
+          "trades": 36.0,
+          "max_drawdown": 0.04641009195658641
+        },
+        {
+          "return": -0.014069667758234317,
+          "trades": 28.0,
+          "max_drawdown": 0.02531741963962797
+        },
+        {
+          "return": -0.019464880705315935,
+          "trades": 42.0,
+          "max_drawdown": 0.03908485780111437
+        },
+        {
+          "return": -0.02425496830399973,
+          "trades": 32.0,
+          "max_drawdown": 0.034161415156464536
+        },
+        {
+          "return": -0.008546612636815165,
+          "trades": 44.0,
+          "max_drawdown": 0.031765765801875956
+        },
+        {
+          "return": -0.0032680433787495855,
+          "trades": 44.0,
+          "max_drawdown": 0.02823129099905708
+        },
+        {
+          "return": -0.01432561447402711,
+          "trades": 28.0,
+          "max_drawdown": 0.027903339127508864
+        },
+        {
+          "return": -0.035712310920377494,
+          "trades": 40.0,
+          "max_drawdown": 0.04617633342581429
+        },
+        {
+          "return": -0.009576766014086108,
+          "trades": 32.0,
+          "max_drawdown": 0.03804604579289694
+        },
+        {
+          "return": -0.024454246360026882,
+          "trades": 43.0,
+          "max_drawdown": 0.05874225123937338
+        }
+      ]
+    },
+    "mean_reversion_2": {
+      "summary": {
+        "median_weekly_return": -0.0015467870392382455,
+        "minimum_weekly_return": -0.006453226520978184,
+        "mean_weekly_return": -0.0016694644067821902,
+        "total_trades": 25.0,
+        "maximum_weekly_drawdown": 0.012997810989766712,
+        "meets_15pct_every_week": false
+      },
+      "eligible": false,
+      "weeks": [
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": -0.0014608659809117741,
+          "trades": 1.0,
+          "max_drawdown": 0.0058434639236470964
+        },
+        {
+          "return": -0.0016960921936822748,
+          "trades": 1.0,
+          "max_drawdown": 0.006784368774729099
+        },
+        {
+          "return": -0.0015825818258449198,
+          "trades": 1.0,
+          "max_drawdown": 0.006330327303379679
+        },
+        {
+          "return": -0.0030362946191991036,
+          "trades": 2.0,
+          "max_drawdown": 0.006186660467234706
+        },
+        {
+          "return": -0.0015089700582660015,
+          "trades": 1.0,
+          "max_drawdown": 0.006035880233064006
+        },
+        {
+          "return": -0.0016004125590428353,
+          "trades": 3.0,
+          "max_drawdown": 0.012997810989766712
+        },
+        {
+          "return": -0.006453226520978184,
+          "trades": 4.0,
+          "max_drawdown": 0.012356852008812313
+        },
+        {
+          "return": -0.0018335638140090371,
+          "trades": 5.0,
+          "max_drawdown": 0.007304240745338864
+        },
+        {
+          "return": 0.00048425358348214154,
+          "trades": 1.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": -0.0015109922526315711,
+          "trades": 1.0,
+          "max_drawdown": 0.0060439690105262844
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0010462346553179458,
+          "trades": 1.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": -0.003546010188341747,
+          "trades": 2.0,
+          "max_drawdown": 0.007274035724641914
+        },
+        {
+          "return": -0.004012908734407683,
+          "trades": 2.0,
+          "max_drawdown": 0.00809613788002539
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        }
+      ]
+    },
+    "mean_reversion_25": {
+      "summary": {
+        "median_weekly_return": 0.0,
+        "minimum_weekly_return": -0.0033640135187751052,
+        "mean_weekly_return": -0.0003020309834651097,
+        "total_trades": 3.0,
+        "maximum_weekly_drawdown": 0.007208351079561859,
+        "meets_15pct_every_week": false
+      },
+      "eligible": false,
+      "weeks": [
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": -0.00146848221666665,
+          "trades": 1.0,
+          "max_drawdown": 0.0058739288666666
+        },
+        {
+          "return": -0.0033640135187751052,
+          "trades": 2.0,
+          "max_drawdown": 0.007208351079561859
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        },
+        {
+          "return": 0.0,
+          "trades": 0.0,
+          "max_drawdown": 0.0
+        }
+      ]
+    }
+  },
+  "oos": {
+    "summary": null,
+    "weeks": [],
+    "reason": "Ninguna regla super\u00f3 los filtros de desarrollo; no se consume el OOS."
+  },
+  "selected_rule": null,
+  "protocol": {
+    "development_weeks": 16,
+    "oos_weeks": 8,
+    "costs": {
+      "fee_per_side": 0.0006,
+      "slippage_per_side": 0.0004
+    },
+    "risk_per_trade": 0.005,
+    "warning": "No usar una regla que no cumpla el umbral OOS; las ocho semanas deben conservarse para una confirmaci\u00f3n futura con datos nuevos."
+  }
+}

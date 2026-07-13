@@ -1,0 +1,282 @@
+import pandas as pd
+import pandas_ta as ta
+import numpy as np
+import optuna
+import os
+import time
+import ccxt
+import warnings
+import matplotlib.pyplot as plt
+import requests
+import datetime
+
+warnings.filterwarnings('ignore')
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+cache_dir = '../data'
+if not os.path.exists(cache_dir):
+    cache_dir = 'data'
+    if not os.path.exists(cache_dir):
+        os.makedirs(cache_dir)
+
+def fetch_fng():
+    cache_file = f"{cache_dir}/fng_cache.csv"
+    if os.path.exists(cache_file):
+        df_fng = pd.read_csv(cache_file)
+        df_fng['date'] = pd.to_datetime(df_fng['date'])
+        return df_fng
+        
+    try:
+        r = requests.get('https://api.alternative.me/fng/?limit=500')
+        data = r.json()['data']
+        fng_list = []
+        for d in data:
+            dt = datetime.datetime.fromtimestamp(int(d['timestamp']))
+            fng_list.append({'date': dt.strftime('%Y-%m-%d'), 'fng': int(d['value'])})
+        df_fng = pd.DataFrame(fng_list)
+        df_fng['date'] = pd.to_datetime(df_fng['date'])
+        df_fng.to_csv(cache_file, index=False)
+        return df_fng
+    except Exception as e:
+        print("Error fetching FNG:", e)
+        return pd.DataFrame(columns=['date', 'fng'])
+
+def fetch_data(sym, timeframe, limit=15000):
+    binance = ccxt.binance({'enableRateLimit': True, 'options': {'defaultType': 'future'}})
+    ms_por_vela = binance.parse_timeframe(timeframe) * 1000
+    chunk_size = 1000
+    cache_file = f"{cache_dir}/{sym.replace('/', '_')}_{timeframe}_FNG_{limit}.csv"
+    
+    hasta_ms = binance.milliseconds()
+    if os.path.exists(cache_file):
+        df_cache = pd.read_csv(cache_file, index_col='timestamp', parse_dates=True)
+        if not df_cache.empty and len(df_cache) >= limit:
+            return df_cache.tail(limit)
+                
+    todos = []
+    while len(todos) < limit:
+        desde_ms_descarga = hasta_ms - (chunk_size * ms_por_vela)
+        bloque = binance.fetch_ohlcv(sym, timeframe, since=desde_ms_descarga, limit=chunk_size)
+        if not bloque: break
+        todos = bloque + todos
+        hasta_ms = desde_ms_descarga
+        time.sleep(0.1)
+    df = pd.DataFrame(todos[-limit:], columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
+    df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+    df.set_index('timestamp', inplace=True)
+    df = df[~df.index.duplicated(keep='first')].sort_index()
+    df.to_csv(cache_file)
+    return df
+
+def prepare_data(df, df_fng):
+    df = df.copy()
+    df['RSI'] = ta.rsi(df['close'], length=7)
+    df['EMA50'] = ta.ema(df['close'], length=50)
+    df['ATR'] = ta.atr(df['high'], df['low'], df['close'], length=7)
+    
+    # Merge FNG
+    df['date_only'] = df.index.normalize()
+    df_fng = df_fng.copy()
+    df_fng['date_only'] = df_fng['date'].dt.normalize()
+    
+    df = df.merge(df_fng[['date_only', 'fng']], on='date_only', how='left')
+    df.set_index(df_raw.index, inplace=True)
+    df.drop('date_only', axis=1, inplace=True)
+    # Forward fill FNG in case some days are missing, fill rest with 50 (neutral)
+    df['fng'].ffill(inplace=True)
+    df['fng'].fillna(50, inplace=True)
+    
+    df.fillna(0, inplace=True)
+    return df
+
+def run_backtest_fng(df, start_idx, end_idx, initial_capital, params):
+    COM, slippage, max_hold = 0.0004, 0.0003, 50
+    capital = initial_capital
+    df_eval = df.iloc[start_idx:end_idx]
+    if len(df_eval) <= max_hold: return capital, [], 0
+    
+    close = df_eval['close'].values
+    high = df_eval['high'].values
+    low = df_eval['low'].values
+    atr = df_eval['ATR'].values
+    rsi = df_eval['RSI'].values
+    ema50 = df_eval['EMA50'].values
+    fng = df_eval['fng'].values
+    
+    timestamps = df_eval.index
+    n = len(df_eval)
+    i = 0
+    equity_updates = []
+    trade_count = 0
+    
+    while i < n - max_hold:
+        if capital <= 10: break
+            
+        current_fng = fng[i]
+        
+        # SENTIMENT FILTER
+        # If today's sentiment is outside the optimal band, do not trade
+        if current_fng < params['min_fng'] or current_fng > params['max_fng']:
+            i += 1
+            continue
+            
+        rsi_ob = params['rsi_ob']
+        rsi_os = params['rsi_os']
+        
+        is_l = (rsi[i] < rsi_os) and (close[i] > ema50[i])
+        is_s = (rsi[i] > rsi_ob) and (close[i] < ema50[i])
+        
+        if is_l or is_s:
+            es_long = is_l
+            c, cur_atr = close[i], atr[i]
+            
+            entrada = c * (1 + slippage) if es_long else c * (1 - slippage)
+            sl_price = entrada - (cur_atr * params['atr_sl_mult']) if es_long else entrada + (cur_atr * params['atr_sl_mult'])
+            ts_activation = entrada + (cur_atr * params['ts_act_mult']) if es_long else entrada - (cur_atr * params['ts_act_mult'])
+            
+            ts_activated = False
+            current_stop = sl_price
+            salida, exit_idx = None, i
+            for j in range(1, max_hold + 1):
+                if i+j >= n: break
+                curr_h, curr_l, curr_c = high[i+j], low[i+j], close[i+j]
+                
+                if es_long:
+                    if not ts_activated and curr_h >= ts_activation: ts_activated = True
+                    if ts_activated:
+                        new_stop = curr_c - (atr[i+j] * params['ts_dist_mult'])
+                        if new_stop > current_stop: current_stop = new_stop
+                    if curr_l <= current_stop: 
+                        salida = current_stop * (1 - slippage); exit_idx = i+j; break
+                else:
+                    if not ts_activated and curr_l <= ts_activation: ts_activated = True
+                    if ts_activated:
+                        new_stop = curr_c + (atr[i+j] * params['ts_dist_mult'])
+                        if new_stop < current_stop: current_stop = new_stop
+                    if curr_h >= current_stop:
+                        salida = current_stop * (1 + slippage); exit_idx = i+j; break
+            
+            if salida is None:
+                salida = close[i+max_hold] * (1 - slippage if es_long else 1 + slippage)
+                exit_idx = i+max_hold
+                
+            sign = 1.0 if es_long else -1.0
+            pnl_pct = (salida - entrada) / entrada * sign - COM * 2
+            riesgo_real_pct = abs(entrada - sl_price) / entrada
+            
+            pos_size = (capital * params['risk_pct']) / max(riesgo_real_pct, 0.001)
+            # Limit position size to prevent immediate bankruptcy
+            if pos_size > capital * 25: pos_size = capital * 25
+            
+            ganancia_usd = pos_size * pnl_pct
+            capital += ganancia_usd
+            equity_updates.append({'time': timestamps[exit_idx], 'pnl': ganancia_usd})
+            trade_count += 1
+            i = exit_idx + 1
+        else:
+            i += 1
+
+    return capital, equity_updates, trade_count
+
+global df_raw
+
+def main():
+    print("INICIANDO DAILY WFO CON FILTRO DE SENTIMIENTO FNG (30 DIAS)")
+    df_fng = fetch_fng()
+    if df_fng.empty:
+        print("No se pudo obtener el FNG. Abortando.")
+        return
+        
+    global df_raw
+    df_raw = fetch_data('SOL/USDT', '15m', limit=15000)
+    df = prepare_data(df_raw, df_fng)
+    
+    CANDLES_PER_DAY = 96
+    TOTAL_DAYS = 30
+    TRAIN_DAYS = 3
+    MAX_RISK = 0.55 # Riesgo brutal, pero protegido por el filtro FNG
+    
+    n_total = len(df)
+    total_capital = 250.0
+    all_oos_updates = []
+    
+    for day_offset in range(TOTAL_DAYS, 0, -1):
+        test_end = n_total - ((day_offset - 1) * CANDLES_PER_DAY)
+        test_start = test_end - CANDLES_PER_DAY
+        train_start = test_start - (TRAIN_DAYS * CANDLES_PER_DAY)
+        
+        if train_start < 0: continue
+            
+        def objective(trial):
+            # The magical sentiment shield parameters
+            min_fng = trial.suggest_int('min_fng', 10, 60)
+            max_fng = trial.suggest_int('max_fng', min_fng + 5, 90)
+            
+            params = {
+                'min_fng': min_fng,
+                'max_fng': max_fng,
+                'rsi_ob': trial.suggest_int('rsi_ob', 65, 80),
+                'rsi_os': trial.suggest_int('rsi_os', 20, 35),
+                'risk_pct': trial.suggest_float('risk_pct', MAX_RISK*0.5, MAX_RISK),
+                'atr_sl_mult': trial.suggest_float('atr_sl_mult', 0.5, 2.0),
+                'ts_act_mult': trial.suggest_float('ts_act_mult', 0.5, 2.0),
+                'ts_dist_mult': trial.suggest_float('ts_dist_mult', 0.2, 1.0)
+            }
+            cap, _, t_count = run_backtest_fng(df, train_start, test_start, 250.0, params)
+            if t_count < 1: return -1000 # Must find at least 1 trade in 3 days
+            return cap
+            
+        study = optuna.create_study(direction='maximize')
+        study.optimize(objective, n_trials=50)
+        p = study.best_params
+        
+        # Test out of sample
+        new_capital, eq, _ = run_backtest_fng(df, test_start, test_end, total_capital, p)
+        profit = new_capital - total_capital
+        total_capital = new_capital
+        all_oos_updates.extend(eq)
+        
+        test_date = df.index[test_start].strftime('%Y-%m-%d')
+        # Print FNG band learned
+        print(f"Día {TOTAL_DAYS - day_offset + 1}/30 ({test_date}): PnL ${profit:+.2f} | Cuenta: ${total_capital:.2f} | Filtro FNG: [{p.get('min_fng',0)}-{p.get('max_fng',100)}]")
+        
+        if total_capital <= 10: break
+
+    print(f"\\n=================================================")
+    print(f"CAPITAL FINAL REAL OOS (30 DIAS): ${total_capital:.2f}")
+    
+    weekly_avg = (total_capital / 250) ** (1/4.28) - 1 if total_capital > 0 else -1
+    print(f"RETORNO SEMANAL PROMEDIO OOS: {weekly_avg*100:.2f}%")
+    
+    import matplotlib
+    matplotlib.use('Agg')
+    fig, ax = plt.subplots(figsize=(12, 6))
+    if all_oos_updates:
+        all_oos_updates.sort(key=lambda x: x['time'])
+        times = [all_oos_updates[0]['time']]
+        caps = [250.0]
+        current = 250.0
+        for u in all_oos_updates:
+            current += u['pnl']
+            times.append(u['time'])
+            caps.append(current)
+        ax.plot(times, caps, color='#00ff00' if total_capital > 250 else '#ff0000', linewidth=2)
+        ax.fill_between(times, caps, 250, where=(np.array(caps) > 250), color='#00ff00', alpha=0.3)
+        ax.fill_between(times, caps, 250, where=(np.array(caps) <= 250), color='#ff0000', alpha=0.3)
+    ax.set_title(f"Sentiment FNG WFO 30d | Semanal OOS: {weekly_avg*100:.2f}%", fontsize=16, color='white')
+    ax.set_ylabel("Capital (USD)", fontsize=12, color='white')
+    ax.set_facecolor('#1e1e1e')
+    fig.patch.set_facecolor('#1e1e1e')
+    ax.tick_params(colors='white')
+    ax.grid(color='#444444', linestyle='--', linewidth=0.5)
+    plt.xticks(rotation=45)
+    artifact_dir = r"C:\Users\Manu\.gemini\antigravity\brain\783f53a5-fa72-4405-a613-4b976ee52762"
+    plt.savefig(f"{artifact_dir}/sentiment_wfo_equity.png", dpi=100, bbox_inches='tight')
+    
+    with open(f"{artifact_dir}/sentiment_wfo_results.md", "w", encoding='utf-8') as f:
+        f.write(f"# Análisis de 30 Días: Daily WFO + Filtro de Sentimiento FNG\n")
+        f.write(f"- Capital Final Real OOS: ${total_capital:.2f}\n")
+        f.write(f"**Retorno Semanal Promedio OOS: {weekly_avg*100:.2f}%**\n")
+
+if __name__ == "__main__":
+    main()
