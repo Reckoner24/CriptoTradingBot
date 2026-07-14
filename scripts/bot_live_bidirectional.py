@@ -5,9 +5,34 @@ import pandas_ta as ta
 import numpy as np
 import optuna
 import os
+import sys
 import json
+import asyncio
+import logging
+from logging.handlers import RotatingFileHandler
 from datetime import datetime, timezone, timedelta
 import warnings
+
+# Añadir directorio padre al sys.path para importar core
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from core.websocket_streamer import WebSocketStreamer
+
+# --- CONFIGURACION DE LOGS ---
+log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+log_file = 'bot_live.log'
+# Max 5MB per file, max 3 backup files
+file_handler = RotatingFileHandler(log_file, mode='a', maxBytes=5*1024*1024, backupCount=3, encoding=None, delay=0)
+file_handler.setFormatter(log_formatter)
+file_handler.setLevel(logging.INFO)
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_formatter)
+console_handler.setLevel(logging.INFO)
+
+logger = logging.getLogger('bot_logger')
+logger.setLevel(logging.INFO)
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 warnings.filterwarnings('ignore')
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -45,7 +70,7 @@ def get_historical_data(sym, limit=288): # 3 dias = 288 velas de 15m
         df.dropna(inplace=True)
         return df
     except Exception as e:
-        print(f"Error descargando datos para {sym}: {e}")
+        logger.error(f"Error descargando datos para {sym}: {e}")
         return pd.DataFrame()
 
 # --- OPTIMIZADOR WFO (SIMULACION DE MOTOR REAL-WORLD) ---
@@ -120,7 +145,7 @@ def simulate_grid(df, params):
     return capital
 
 def run_wfo_daily(sym):
-    print(f"[{datetime.now().strftime('%H:%M:%S')}] Ejecutando Optimizador WFO para {sym} (Ultimos 3 dias)...")
+    logger.info(f"Ejecutando Optimizador WFO para {sym} (Ultimos 3 dias)...")
     df = get_historical_data(sym, limit=288) # 3 days of 15m candles
     if df.empty or len(df) < 50: return None
     
@@ -202,7 +227,7 @@ class PaperTrader:
             'open_time': time.time(),
             'candles_held': 0
         }
-        print(f">>> [PAPER] OPEN {direction} en {sym} a {entry_price} (Tamaño: ${pos_size_usd:.2f})")
+        logger.info(f">>> [PAPER] OPEN {direction} en {sym} a {entry_price} (Tamaño: ${pos_size_usd:.2f})")
         self.save_state()
         
     def close_position(self, sym, direction, close_price, reason):
@@ -223,7 +248,7 @@ class PaperTrader:
         ganancia = size * pnl_pct
         self.state['balance'] += ganancia
         
-        print(f"<<< [PAPER] CLOSE {direction} en {sym} ({reason}) a {close_price} | PnL: ${ganancia:+.2f} | Balance Total: ${self.state['balance']:.2f}")
+        logger.info(f"<<< [PAPER] CLOSE {direction} en {sym} ({reason}) a {close_price} | PnL: ${ganancia:+.2f} | Balance Total: ${self.state['balance']:.2f}")
         
         del self.state['positions'][sym][direction]
         
@@ -240,38 +265,65 @@ class PaperTrader:
         self.save_state()
 
 # --- BUCLE PRINCIPAL ---
-def live_loop():
-    print(f"==================================================")
-    print(f"[LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL)")
-    print(f"MODO: {'[API] DINERO REAL' if USE_REAL_MONEY else '[SIMULADOR] PAPER TRADING'}")
-    print(f"MONEDAS: {SYMBOLS}")
-    print(f"==================================================\n")
+async def live_loop():
+    logger.info(f"==================================================")
+    logger.info(f"[LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)")
+    logger.info(f"MODO: {'[API] DINERO REAL' if USE_REAL_MONEY else '[SIMULADOR] PAPER TRADING'}")
+    logger.info(f"MONEDAS: {SYMBOLS}")
+    logger.info(f"==================================================")
     
     trader = PaperTrader()
-    print(f"Balance Inicial Ficticio: ${trader.state['balance']:.2f}\n")
+    logger.info(f"Balance Inicial Ficticio: ${trader.state['balance']:.2f}")
+    
+    # Inicializar WebSocket Streamer en segundo plano
+    streamer = WebSocketStreamer(testnet=False)
+    asyncio.create_task(streamer.start_streaming(SYMBOLS))
+    
+    logger.info("Esperando 5 segundos para popular los buffers del WebSocket...")
+    await asyncio.sleep(5)
+    
+    # Variables de control para retroceso exponencial (Backoff) solo para API WFO
+    base_sleep = 0.5 # Bucle asíncrono rápido (2 veces por segundo)
+    current_sleep = base_sleep
+    max_sleep = 300 # 5 minutos maximo
     
     while True:
         try:
             # 1. Chequear si necesitamos correr el WFO (cada 24h o al inicio)
             now_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
             if trader.state['last_wfo_time'] != now_str:
-                print(f"\n--- [UTC 00:00] INICIANDO OPTIMIZACION DIARIA WFO ---")
+                logger.info(f"--- [UTC 00:00] INICIANDO OPTIMIZACION DIARIA WFO ---")
                 for sym in SYMBOLS:
                     wfo_result = run_wfo_daily(sym)
                     if wfo_result:
                         trader.state['wfo_data'][sym] = wfo_result
                 trader.state['last_wfo_time'] = now_str
                 trader.save_state()
-                print(f"--- OPTIMIZACION COMPLETADA ---\n")
+                logger.info(f"--- OPTIMIZACION COMPLETADA ---")
                 
-            # 2. Descargar precios en tiempo real para todos los simbolos
-            tickers = exchange.fetch_tickers(SYMBOLS)
+            # 2. Obtener precios en tiempo real desde el WebSocket en lugar de REST
+            # tickers = exchange.fetch_tickers(SYMBOLS)
+            
+            # --- LATIDO DEL SISTEMA (HEARTBEAT) ---
+            # Imprimir un mensaje cada hora para saber que sigue vivo
+            if 'last_heartbeat' not in trader.state: trader.state['last_heartbeat'] = 0
+            if time.time() - trader.state['last_heartbeat'] > 3600:
+                logger.info(f"--- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---")
+                trader.state['last_heartbeat'] = time.time()
+                trader.save_state()
             
             # 3. Iterar cada simbolo para gestionar entradas y salidas
             for sym in SYMBOLS:
                 if sym not in trader.state['wfo_data']: continue
                 
-                current_price = tickers[sym]['last']
+                # Binance stream symbols format for data payload 's' is UPPERCASE: BTCUSDT
+                ws_sym = sym.replace('/', '').upper()
+                
+                mark_data = streamer.mark_price_data.get(ws_sym)
+                if not mark_data or 'mark_price' not in mark_data:
+                    continue # Esperar a tener datos
+                    
+                current_price = mark_data['mark_price']
                 targets = trader.state['wfo_data'][sym]['targets']
                 indicators = trader.state['wfo_data'][sym]['indicators']
                 
@@ -322,12 +374,26 @@ def live_loop():
                 if not has_short and current_price >= targets['short_entry']:
                     trader.open_position(sym, 'SHORT', current_price)
             
-            # Dormir para no reventar la API
-            time.sleep(5)
+            # Reset sleep time on success
+            current_sleep = base_sleep
+            await asyncio.sleep(current_sleep)
             
+        except ccxt.RateLimitExceeded as e:
+            logger.warning(f"Límite de API de Binance alcanzado (RateLimitExceeded): {e}")
+            current_sleep = min(current_sleep * 2, max_sleep)
+            logger.info(f"Esperando {current_sleep} segundos antes de reintentar...")
+            await asyncio.sleep(current_sleep)
+        except ccxt.NetworkError as e:
+            logger.warning(f"Error de red al conectar con Binance (NetworkError): {e}")
+            current_sleep = min(current_sleep * 2, max_sleep)
+            logger.info(f"Esperando {current_sleep} segundos antes de reintentar...")
+            await asyncio.sleep(current_sleep)
+        except ccxt.ExchangeError as e:
+            logger.error(f"Error del Exchange de Binance (ExchangeError): {e}")
+            await asyncio.sleep(base_sleep)
         except Exception as e:
-            print(f"[{datetime.now().strftime('%H:%M:%S')}] Error en el bucle principal: {e}")
-            time.sleep(10) # Esperar antes de reintentar
+            logger.error(f"Error inesperado en el bucle principal: {e}", exc_info=True)
+            await asyncio.sleep(base_sleep) # Esperar antes de reintentar
 
 if __name__ == "__main__":
-    live_loop()
+    asyncio.run(live_loop())

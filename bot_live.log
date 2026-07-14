@@ -1,0 +1,38 @@
+2026-07-13 22:09:14,231 - INFO - ==================================================
+2026-07-13 22:09:14,231 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
+2026-07-13 22:09:14,232 - INFO - MODO: [SIMULADOR] PAPER TRADING
+2026-07-13 22:09:14,232 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+2026-07-13 22:09:14,232 - INFO - ==================================================
+2026-07-13 22:09:14,233 - INFO - Balance Inicial Ficticio: $1000.00
+2026-07-13 22:09:14,233 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
+2026-07-13 22:09:19,247 - INFO - --- [UTC 00:00] INICIANDO OPTIMIZACION DIARIA WFO ---
+2026-07-13 22:09:19,247 - INFO - Ejecutando Optimizador WFO para BTC/USDT (Ultimos 3 dias)...
+2026-07-13 22:09:22,322 - INFO - Ejecutando Optimizador WFO para ETH/USDT (Ultimos 3 dias)...
+2026-07-13 22:09:22,653 - INFO - Ejecutando Optimizador WFO para SOL/USDT (Ultimos 3 dias)...
+2026-07-13 22:09:22,996 - INFO - --- OPTIMIZACION COMPLETADA ---
+2026-07-13 22:17:54,407 - INFO - ==================================================
+2026-07-13 22:17:54,407 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
+2026-07-13 22:17:54,407 - INFO - MODO: [SIMULADOR] PAPER TRADING
+2026-07-13 22:17:54,408 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+2026-07-13 22:17:54,408 - INFO - ==================================================
+2026-07-13 22:17:54,408 - INFO - Balance Inicial Ficticio: $1000.00
+2026-07-13 22:17:54,409 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
+2026-07-13 22:26:20,314 - INFO - ==================================================
+2026-07-13 22:26:20,315 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
+2026-07-13 22:26:20,315 - INFO - MODO: [SIMULADOR] PAPER TRADING
+2026-07-13 22:26:20,315 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+2026-07-13 22:26:20,315 - INFO - ==================================================
+2026-07-13 22:26:20,316 - INFO - Balance Inicial Ficticio: $1000.00
+2026-07-13 22:26:20,316 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
+2026-07-13 22:33:35,448 - INFO - ==================================================
+2026-07-13 22:33:35,448 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
+2026-07-13 22:33:35,448 - INFO - MODO: [SIMULADOR] PAPER TRADING
+2026-07-13 22:33:35,448 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+2026-07-13 22:33:35,448 - INFO - ==================================================
+2026-07-13 22:33:35,449 - INFO - Balance Inicial Ficticio: $1000.00
+2026-07-13 22:33:35,449 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
+2026-07-13 22:33:40,461 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
+2026-07-13 23:33:40,659 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
+2026-07-14 00:33:41,143 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
+2026-07-14 01:33:41,193 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
+2026-07-14 08:18:01,500 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
