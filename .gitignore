@@ -7,3 +7,5 @@ __pycache__/
 .entorno*/
 .idea*/
 .claude*/
+# Archived scripts
+_archive/

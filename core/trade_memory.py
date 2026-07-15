@@ -1,1 +1,0 @@
-# Archivo vacío inicial para trade_memory

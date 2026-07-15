@@ -1,1 +1,0 @@
-# Archivo vacío inicial para risk_guardian

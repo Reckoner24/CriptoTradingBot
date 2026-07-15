@@ -12,10 +12,31 @@ import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime, timezone, timedelta
 import warnings
+import aiohttp
+from dotenv import load_dotenv
 
 # Añadir directorio padre al sys.path para importar core
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.websocket_streamer import WebSocketStreamer
+from core.database import init_db, update_bot_state
+from core.order_executor import OrderExecutor
+
+load_dotenv()
+TELEGRAM_BOT_API = os.getenv("TELEGRAM_BOT_API", "")
+TELEGRAM_ID = os.getenv("TELEGRAM_ID", "")
+
+# --- FUNCION DE ALERTAS TELEGRAM ---
+async def send_telegram_alert(msg: str):
+    if not TELEGRAM_BOT_API or not TELEGRAM_ID:
+        return
+    try:
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_API}/sendMessage"
+        payload = {"chat_id": TELEGRAM_ID, "text": msg, "parse_mode": "Markdown"}
+        
+        async with aiohttp.ClientSession() as session:
+            await session.post(url, json=payload)
+    except Exception as e:
+        logger.error(f"Error enviando alerta por Telegram: {e}")
 
 # --- CONFIGURACION DE LOGS ---
 log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
@@ -37,23 +58,25 @@ logger.addHandler(console_handler)
 warnings.filterwarnings('ignore')
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-# --- CONFIGURACION DE PRODUCCION ---
-USE_REAL_MONEY = False # <-- SWITCH PARA PRODUCCION REAL
-API_KEY = "TU_API_KEY_AQUI"
-API_SECRET = "TU_API_SECRET_AQUI"
+# --- CONFIGURACION DE PRODUCCION / TESTNET ---
+USE_TESTNET = True # <-- SWITCH PARA USAR TESTNET (Balance real)
+API_KEY = os.getenv("BINANCE_TESTNET_KEY", "")
+API_SECRET = os.getenv("BINANCE_TESTNET_SECRET", "")
 
 SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
 TIMEFRAME = '15m'
 STATE_FILE = 'paper_state.json'
 MAX_RISK = 0.20
 HARD_CAP_LIQUIDITY = 10000.0
+LEVERAGE = 3
 
 # --- INICIALIZAR EXCHANGE ---
 exchange = ccxt.binance({
     'enableRateLimit': True,
     'options': {'defaultType': 'future'}
 })
-if USE_REAL_MONEY:
+if USE_TESTNET:
+    exchange.enable_demo_trading(True)
     exchange.apiKey = API_KEY
     exchange.secret = API_SECRET
 
@@ -193,18 +216,31 @@ def run_wfo_daily(sym):
         }
     }
 
-# --- CLASE PAPER TRADER ---
-class PaperTrader:
+# --- CLASE LIVE TRADER ---
+class LiveTrader:
     def __init__(self):
         self.state = {
-            'balance': 1000.0,
+            'balance': 0.0,
             'positions': {},
             'history': [],
             'wfo_data': {},
             'last_wfo_time': ""
         }
+        self.executor = OrderExecutor(exchange, LEVERAGE)
         self.load_state()
+        self.sync_balance()
         
+    def sync_balance(self):
+        try:
+            balance = exchange.fetch_balance()
+            if 'USDT' in balance:
+                self.state['balance'] = balance['USDT']['free']
+                logger.info(f"Balance sincronizado con el Exchange: ${self.state['balance']:.2f} USDT")
+        except Exception as e:
+            logger.error(f"Error obteniendo balance del Exchange: {e}")
+            if self.state['balance'] == 0.0:
+                self.state['balance'] = 1000.0 # Fallback
+            
     def load_state(self):
         if os.path.exists(STATE_FILE):
             with open(STATE_FILE, 'r') as f:
@@ -219,61 +255,110 @@ class PaperTrader:
             return # Already open
             
         pos_size_usd = min(self.state['balance'] * MAX_RISK * 5, HARD_CAP_LIQUIDITY)
+        
+        # --- EJECUCION REAL ---
+        result = self.executor.open_position(sym, direction, pos_size_usd, entry_price)
+        if result['status'] != 'success':
+            return # Falló la ejecución
+            
+        real_entry = result['entry_price']
+        real_amount = result['amount']
+        
         if sym not in self.state['positions']: self.state['positions'][sym] = {}
         
         self.state['positions'][sym][direction] = {
-            'entry_price': entry_price,
+            'entry_price': real_entry,
             'size_usd': pos_size_usd,
+            'amount': real_amount,
+            'order_id': result['order_id'],
             'open_time': time.time(),
             'candles_held': 0
         }
-        logger.info(f">>> [PAPER] OPEN {direction} en {sym} a {entry_price} (Tamaño: ${pos_size_usd:.2f})")
+        
+        # Alerta de Telegram
+        icono = "🟢" if direction == "LONG" else "🔴"
+        alerta = (
+            f"{icono} *NUEVA POSICIÓN REAL*\n\n"
+            f"🔸 *Par:* `{sym}`\n"
+            f"🔸 *Dirección:* `{direction}`\n"
+            f"🔸 *Entrada:* `${real_entry:,.4f}`\n"
+            f"🔸 *Tamaño:* `${pos_size_usd:,.2f}` USDT"
+        )
+        asyncio.create_task(send_telegram_alert(alerta))
+        
         self.save_state()
+        asyncio.create_task(update_bot_state("running", self.state['balance'], self.state['positions'], self.state.get('last_wfo_time', "")))
         
     def close_position(self, sym, direction, close_price, reason):
         if sym not in self.state['positions'] or direction not in self.state['positions'][sym]:
             return
             
         pos = self.state['positions'][sym][direction]
-        entry = pos['entry_price']
-        size = pos['size_usd']
+        amount = pos.get('amount', 0)
         
-        if direction == 'LONG':
-            pnl_pct = (close_price - entry) / entry
-        else:
-            pnl_pct = (entry - close_price) / entry
+        if amount <= 0:
+            logger.error(f"Error: La posicion {direction} en {sym} no tiene un 'amount' valido.")
+            del self.state['positions'][sym][direction]
+            return
             
-        # Comision de 0.04% por lado
-        pnl_pct -= 0.0008
-        ganancia = size * pnl_pct
-        self.state['balance'] += ganancia
+        # --- EJECUCION REAL ---
+        result = self.executor.close_position(sym, direction, amount)
+        real_close_price = result.get('close_price', close_price)
         
-        logger.info(f"<<< [PAPER] CLOSE {direction} en {sym} ({reason}) a {close_price} | PnL: ${ganancia:+.2f} | Balance Total: ${self.state['balance']:.2f}")
+        # Actualizamos balance despues de cerrar
+        self.sync_balance()
+        
+        # Calculamos PnL aproximado para historial
+        entry = pos['entry_price']
+        if direction == 'LONG':
+            pnl_pct = (real_close_price - entry) / entry
+        else:
+            pnl_pct = (entry - real_close_price) / entry
+        
+        pnl_pct -= 0.0008 # comision
+        ganancia = pos['size_usd'] * pnl_pct
+        
+        # Alerta de Telegram
+        icono_pnl = "💸" if ganancia > 0 else "🩸"
+        alerta = (
+            f"🏁 *POSICIÓN REAL CERRADA*\n\n"
+            f"🔹 *Par:* `{sym}`\n"
+            f"🔹 *Dirección:* `{direction}`\n"
+            f"🔹 *Motivo:* `{reason}`\n"
+            f"🔹 *Salida:* `${real_close_price:,.4f}`\n"
+            f"🔹 *Rendimiento aprox:* {icono_pnl} `${ganancia:+.2f}` USDT\n\n"
+            f"💰 *Nuevo Balance:* `${self.state['balance']:,.2f}`"
+        )
+        asyncio.create_task(send_telegram_alert(alerta))
         
         del self.state['positions'][sym][direction]
         
-        # Guardar historial
         self.state['history'].append({
             'sym': sym,
             'dir': direction,
             'entry': entry,
-            'exit': close_price,
+            'exit': real_close_price,
             'pnl': ganancia,
             'reason': reason,
             'time': time.time()
         })
         self.save_state()
+        
+        asyncio.create_task(update_bot_state("running", self.state['balance'], self.state['positions'], self.state.get('last_wfo_time', "")))
 
 # --- BUCLE PRINCIPAL ---
 async def live_loop():
+    await init_db()
+    
     logger.info(f"==================================================")
     logger.info(f"[LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)")
-    logger.info(f"MODO: {'[API] DINERO REAL' if USE_REAL_MONEY else '[SIMULADOR] PAPER TRADING'}")
+    logger.info(f"MODO: [CCXT LIVE EXECUTION] -> TESTNET: {USE_TESTNET}")
     logger.info(f"MONEDAS: {SYMBOLS}")
     logger.info(f"==================================================")
     
-    trader = PaperTrader()
-    logger.info(f"Balance Inicial Ficticio: ${trader.state['balance']:.2f}")
+    trader = LiveTrader()
+    logger.info(f"Balance Inicial: ${trader.state['balance']:.2f}")
+    await update_bot_state("started", trader.state['balance'], trader.state['positions'], trader.state.get('last_wfo_time', ""))
     
     # Inicializar WebSocket Streamer en segundo plano
     streamer = WebSocketStreamer(testnet=False)
@@ -311,6 +396,8 @@ async def live_loop():
                 logger.info(f"--- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---")
                 trader.state['last_heartbeat'] = time.time()
                 trader.save_state()
+                # Opcional: Actualizar DB de forma ligera
+                asyncio.create_task(update_bot_state("running", trader.state['balance'], trader.state['positions'], trader.state.get('last_wfo_time', "")))
             
             # 3. Iterar cada simbolo para gestionar entradas y salidas
             for sym in SYMBOLS:

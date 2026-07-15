@@ -39,6 +39,8 @@ python-dotenv
 asyncio
 sqlalchemy
 aiosqlite
+fastapi
+uvicorn
 
 # Testing
 pytest

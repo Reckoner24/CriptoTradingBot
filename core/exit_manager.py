@@ -1,1 +1,0 @@
-# Archivo vacío inicial para exit_manager
