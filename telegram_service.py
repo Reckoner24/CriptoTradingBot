@@ -73,13 +73,16 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
         balance = bot_data.get("balance", 0.0)
         bot_state = bot_data.get("status", "Desconocido")
         last_update = bot_data.get("timestamp", "Nunca")
-        open_pos_count = len(bot_data.get("open_positions", {}))
+        open_pos = bot_data.get("open_positions", {})
+        
+        # Count actual active positions, not just symbols in dict
+        open_pos_count = sum(1 for sym, dirs in open_pos.items() for d in dirs.keys() if d in ["LONG", "SHORT"])
         
         msg = (
             "📊 *Estado del Bot*\n"
-            f"💰 *Balance Total:* `${balance:,.2f}` USDT\n"
+            f"💰 *Balance Billetera (Total):* `${balance:,.2f}` USDT\n"
             f"🔄 *Estado:* `{bot_state}`\n"
-            f"📈 *Pares con Posiciones:* `{open_pos_count}`\n"
+            f"📈 *Operaciones Abiertas:* `{open_pos_count}`\n"
             f"⏱ *Última Actualización:* `{last_update}`"
         )
     else:
@@ -121,6 +124,59 @@ async def posiciones(update: Update, context: ContextTypes.DEFAULT_TYPE):
         
     await update.message.reply_text(msg, parse_mode="Markdown")
 
+async def portafolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update):
+        return
+        
+    await update.message.reply_chat_action(action="typing")
+    data = await fetch_api("/status")
+    
+    if data.get("status") == "success":
+        bot_data = data["data"]
+        balance_total = bot_data.get("balance", 0.0)
+        free_balance = bot_data.get("free_balance", 0.0)
+        open_pos = bot_data.get("open_positions", {})
+        
+        global_pnl = 0.0
+        details = ""
+        
+        for sym, directions in open_pos.items():
+            for d_name, d_info in directions.items():
+                if d_name not in ["LONG", "SHORT"]: continue
+                
+                entry = d_info.get("entry_price", 0)
+                current = d_info.get("current_price", entry)
+                size = d_info.get("size_usd", 0)
+                pnl = d_info.get("unrealized_pnl", 0.0)
+                global_pnl += pnl
+                
+                icono = "🟢" if d_name == "LONG" else "🔴"
+                pnl_icon = "📈" if pnl >= 0 else "📉"
+                
+                details += (
+                    f"{icono} *{sym}* ({d_name})\n"
+                    f"   Inversión: `${size:,.2f}`\n"
+                    f"   Entrada: `${entry:,.4f}`\n"
+                    f"   Actual: `${current:,.4f}`\n"
+                    f"   PnL: {pnl_icon} *${pnl:,.2f}*\n\n"
+                )
+        
+        if details == "":
+            details = "✅ No hay posiciones activas.\n"
+            
+        msg = (
+            "💼 *Portafolio Actual*\n"
+            f"💰 *Balance Billetera:* `${balance_total:,.2f}` USDT\n"
+            f"🔓 *Margen Libre:* `${free_balance:,.2f}` USDT\n"
+            f"⚖️ *PnL Flotante Total:* *${global_pnl:,.2f}* USDT\n\n"
+            f"📊 *Distribución de Activos:*\n"
+            f"{details}"
+        )
+    else:
+        msg = f"⚠️ *Error al obtener el portafolio:*\n{data.get('message', 'Desconocido')}"
+        
+    await update.message.reply_text(msg, parse_mode="Markdown")
+
 # --- BUCLE PRINCIPAL ---
 def main():
     if not TELEGRAM_BOT_API:
@@ -132,6 +188,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("status", status))
     app.add_handler(CommandHandler("posiciones", posiciones))
+    app.add_handler(CommandHandler("portafolio", portafolio))
 
     logger.info("🤖 Bot de Telegram iniciado y escuchando comandos...")
     app.run_polling()

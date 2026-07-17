@@ -32,12 +32,10 @@ class WebSocketStreamer:
         self.running = True
         streams = []
         for sym in symbols:
-            s = sym.lower()
+            # Binance stream symbols must be lowercase and without slashes (e.g. btcusdt)
+            s = sym.replace('/', '').lower()
             streams.extend([
-                f"{s}@aggTrade",
-                f"{s}@depth20@100ms",
-                f"{s}@markPrice",
-                f"{s}@forceOrder"
+                f"{s}@bookTicker" # bookTicker ha demostrado funcionar correctamente y ser muy rápido
             ])
             
         stream_url = self.base_url + "/".join(streams)
@@ -48,7 +46,7 @@ class WebSocketStreamer:
         while self.running:
             try:
                 logger.info(f"Conectando a WebSocket: {stream_url}")
-                async with websockets.connect(stream_url) as ws:
+                async with websockets.connect(stream_url, ping_interval=180, ping_timeout=180) as ws:
                     self._ws = ws
                     logger.info("WebSocket conectado exitosamente.")
                     reconnect_delay = 1  # Reset delay on successful connection
@@ -87,35 +85,17 @@ class WebSocketStreamer:
         event_type = data.get("e")
         symbol = data.get("s")
         
-        if stream_name.endswith("@aggTrade"):
-            # Aggregated Trade
-            tick = {
-                "timestamp": data.get("T"),
-                "symbol": symbol,
-                "price": float(data.get("p", 0)),
-                "quantity": float(data.get("q", 0)),
-                "is_buyer_maker": data.get("m", False)
-            }
-            self.ticks_buffer.append(tick)
-            
-        elif stream_name.endswith("@depth20@100ms"):
-            # Partial Book Depth
-            if symbol not in self.order_book:
-                self.order_book[symbol] = {}
-            self.order_book[symbol] = {
-                "bids": [[float(p), float(q)] for p, q in data.get("b", [])],
-                "asks": [[float(p), float(q)] for p, q in data.get("a", [])],
-                "timestamp": data.get("E")
-            }
-            
-        elif stream_name.endswith("@markPrice"):
-            # Mark Price and Funding Rate
+        if stream_name.endswith("@bookTicker"):
+            # bookTicker nos da el mejor bid y ask en tiempo real
             if symbol not in self.mark_price_data:
                 self.mark_price_data[symbol] = {}
+                
+            bid = float(data.get("b", 0))
+            ask = float(data.get("a", 0))
+            mid_price = (bid + ask) / 2 if bid and ask else bid or ask
+            
             self.mark_price_data[symbol] = {
-                "mark_price": float(data.get("p", 0)),
-                "funding_rate": float(data.get("r", 0)),
-                "next_funding_time": data.get("T")
+                "mark_price": mid_price
             }
             
         elif stream_name.endswith("@forceOrder"):

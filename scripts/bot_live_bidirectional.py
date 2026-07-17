@@ -25,24 +25,33 @@ load_dotenv()
 TELEGRAM_BOT_API = os.getenv("TELEGRAM_BOT_API", "")
 TELEGRAM_ID = os.getenv("TELEGRAM_ID", "")
 
+import urllib.request
+import urllib.parse
+import json
+
 # --- FUNCION DE ALERTAS TELEGRAM ---
 async def send_telegram_alert(msg: str):
     if not TELEGRAM_BOT_API or not TELEGRAM_ID:
         return
-    try:
-        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_API}/sendMessage"
-        payload = {"chat_id": TELEGRAM_ID, "text": msg, "parse_mode": "Markdown"}
         
-        async with aiohttp.ClientSession() as session:
-            await session.post(url, json=payload)
-    except Exception as e:
-        logger.error(f"Error enviando alerta por Telegram: {e}")
+    def _send():
+        try:
+            url = f"https://api.telegram.org/bot{TELEGRAM_BOT_API}/sendMessage"
+            data = json.dumps({"chat_id": TELEGRAM_ID, "text": msg, "parse_mode": "Markdown"}).encode('utf-8')
+            req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+            with urllib.request.urlopen(req, timeout=10) as response:
+                pass
+        except Exception as e:
+            logger.error(f"Error enviando alerta por Telegram: {e}")
+            
+    # Ejecutar en un hilo para no bloquear el loop de asyncio y evitar problemas de DNS de aiohttp en Windows
+    asyncio.get_event_loop().run_in_executor(None, _send)
 
 # --- CONFIGURACION DE LOGS ---
-log_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
 log_file = 'bot_live.log'
-# Max 5MB per file, max 3 backup files
-file_handler = RotatingFileHandler(log_file, mode='a', maxBytes=5*1024*1024, backupCount=3, encoding=None, delay=0)
+# Maximo ~5000 logs divididos en 5 archivos de ~1000 logs c/u (aprox 150KB por archivo)
+file_handler = RotatingFileHandler(log_file, mode='a', maxBytes=150*1024, backupCount=4, encoding=None, delay=0)
 file_handler.setFormatter(log_formatter)
 file_handler.setLevel(logging.INFO)
 
@@ -50,10 +59,13 @@ console_handler = logging.StreamHandler()
 console_handler.setFormatter(log_formatter)
 console_handler.setLevel(logging.INFO)
 
-logger = logging.getLogger('bot_logger')
-logger.setLevel(logging.INFO)
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
+# Configurar ROOT logger para que tome logs de todos los modulos secundarios (ej. websocket_streamer)
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+root_logger.addHandler(file_handler)
+root_logger.addHandler(console_handler)
+
+logger = logging.getLogger('bot_main')
 
 warnings.filterwarnings('ignore')
 optuna.logging.set_verbosity(optuna.logging.WARNING)
@@ -73,7 +85,7 @@ LEVERAGE = 3
 # --- INICIALIZAR EXCHANGE ---
 exchange = ccxt.binance({
     'enableRateLimit': True,
-    'options': {'defaultType': 'future'}
+    'options': {'defaultType': 'future', 'adjustForTimeDifference': True, 'recvWindow': 10000}
 })
 if USE_TESTNET:
     exchange.enable_demo_trading(True)
@@ -167,6 +179,83 @@ def simulate_grid(df, params):
         
     return capital
 
+def simulate_grid_metrics(df, params):
+    close = df['close'].values
+    high = df['high'].values
+    low = df['low'].values
+    atr = df['ATR'].values
+    ema20 = df['EMA20'].values
+    n = len(df)
+    i = 0
+    wins = 0
+    losses = 0
+    
+    while i < n - 1:
+        c_atr = atr[i]
+        
+        entry_long = close[i] - (c_atr * params['grid_spacing_mult_l'])
+        sl_long = entry_long - (c_atr * params['sl_mult_l'])
+        tp_long = entry_long + ((close[i] - entry_long) * params['tp_mult_l'])
+        
+        entry_short = close[i] + (c_atr * params['grid_spacing_mult_s'])
+        sl_short = entry_short + (c_atr * params['sl_mult_s'])
+        tp_short = entry_short - ((entry_short - close[i]) * params['tp_mult_s'])
+        
+        long_active = False; short_active = False
+        salida_l = None; salida_s = None
+        exit_idx_l = i; exit_idx_s = i
+        
+        for j in range(1, 41):
+            if i+j >= n: break
+            curr_h = high[i+j]; curr_l = low[i+j]; curr_c = close[i+j]
+            
+            # Pessimistic Mode
+            if not long_active:
+                if curr_l <= entry_long:
+                    long_active = True
+                    if curr_h >= tp_long and curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
+                    elif curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
+                    elif curr_h >= tp_long: salida_l = tp_long; exit_idx_l = i+j
+            else:
+                if salida_l is None:
+                    if curr_h >= tp_long and curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
+                    elif curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
+                    elif curr_h >= tp_long: salida_l = tp_long; exit_idx_l = i+j
+                    elif j == 20 and curr_c <= ema20[i+j]: salida_l = curr_c; exit_idx_l = i+j
+                    elif j == 40: salida_l = curr_c; exit_idx_l = i+j
+                        
+            if not short_active:
+                if curr_h >= entry_short:
+                    short_active = True
+                    if curr_l <= tp_short and curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
+                    elif curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
+                    elif curr_l <= tp_short: salida_s = tp_short; exit_idx_s = i+j
+            else:
+                if salida_s is None:
+                    if curr_l <= tp_short and curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
+                    elif curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
+                    elif curr_l <= tp_short: salida_s = tp_short; exit_idx_s = i+j
+                    elif j == 20 and curr_c >= ema20[i+j]: salida_s = curr_c; exit_idx_s = i+j
+                    elif j == 40: salida_s = curr_c; exit_idx_s = i+j
+            
+            if (not long_active or salida_l is not None) and (not short_active or salida_s is not None): break
+                
+        if long_active and salida_l is not None:
+            if salida_l > entry_long: wins += 1
+            else: losses += 1
+        if short_active and salida_s is not None:
+            if salida_s < entry_short: wins += 1
+            else: losses += 1
+            
+        max_exit = max(i, exit_idx_l if long_active else i, exit_idx_s if short_active else i)
+        i = max_exit if max_exit > i else i + 1
+        
+    total = wins + losses
+    return {
+        'win_rate': wins / total if total > 0 else 0.5,
+        'total_trades': total
+    }
+
 def run_wfo_daily(sym):
     logger.info(f"Ejecutando Optimizador WFO para {sym} (Ultimos 3 dias)...")
     df = get_historical_data(sym, limit=288) # 3 days of 15m candles
@@ -185,7 +274,7 @@ def run_wfo_daily(sym):
         return simulate_grid(df, params)
         
     study = optuna.create_study(direction='maximize')
-    study.optimize(objective, n_trials=30)
+    study.optimize(objective, n_trials=200)
     
     best = study.best_params
     
@@ -198,8 +287,11 @@ def run_wfo_daily(sym):
     entry_l = c_close - (c_atr * best['grid_spacing_mult_l'])
     entry_s = c_close + (c_atr * best['grid_spacing_mult_s'])
     
+    metrics = simulate_grid_metrics(df, best)
+    
     return {
         'params': best,
+        'metrics': metrics,
         'targets': {
             'long_entry': entry_l,
             'long_tp': entry_l + ((c_close - entry_l) * best['tp_mult_l']),
@@ -223,6 +315,7 @@ class LiveTrader:
             'balance': 0.0,
             'positions': {},
             'history': [],
+            'cooldowns': {},
             'wfo_data': {},
             'last_wfo_time': ""
         }
@@ -234,8 +327,9 @@ class LiveTrader:
         try:
             balance = exchange.fetch_balance()
             if 'USDT' in balance:
-                self.state['balance'] = balance['USDT']['free']
-                logger.info(f"Balance sincronizado con el Exchange: ${self.state['balance']:.2f} USDT")
+                self.state['balance'] = balance['USDT'].get('total', balance['USDT']['free'])
+                self.state['free_balance'] = balance['USDT']['free']
+                logger.info(f"Balance sincronizado con el Exchange: Total ${self.state['balance']:.2f} | Libre ${self.state['free_balance']:.2f} USDT")
         except Exception as e:
             logger.error(f"Error obteniendo balance del Exchange: {e}")
             if self.state['balance'] == 0.0:
@@ -254,11 +348,25 @@ class LiveTrader:
         if sym in self.state['positions'] and direction in self.state['positions'][sym]:
             return # Already open
             
-        pos_size_usd = min(self.state['balance'] * MAX_RISK * 5, HARD_CAP_LIQUIDITY)
+        # Determinar probabilidad de éxito para balancear el riesgo (Kelly-lite)
+        win_rate = self.state.get('wfo_data', {}).get(sym, {}).get('metrics', {}).get('win_rate', 0.5)
+        # Escala dinámica: 50% Win Rate = 1x, 75% Win Rate = 1.5x, 25% Win Rate = 0.5x
+        dynamic_multiplier = max(0.5, min(2.0, win_rate / 0.5))
+        
+        free_margin_limit = self.state.get('free_balance', 0) * 0.70
+        ideal_size = self.state['balance'] * MAX_RISK * 5 * dynamic_multiplier
+        pos_size_usd = min(ideal_size, HARD_CAP_LIQUIDITY, free_margin_limit)
+        
+        if pos_size_usd < 10:
+            logger.warning(f"Margen insuficiente para operar {sym}. Margen libre: {self.state.get('free_balance', 0)}")
+            return
         
         # --- EJECUCION REAL ---
         result = self.executor.open_position(sym, direction, pos_size_usd, entry_price)
         if result['status'] != 'success':
+            if 'cooldowns' not in self.state:
+                self.state['cooldowns'] = {}
+            self.state['cooldowns'][sym] = time.time() + 60 # 60s cooldown on failure
             return # Falló la ejecución
             
         real_entry = result['entry_price']
@@ -287,7 +395,7 @@ class LiveTrader:
         asyncio.create_task(send_telegram_alert(alerta))
         
         self.save_state()
-        asyncio.create_task(update_bot_state("running", self.state['balance'], self.state['positions'], self.state.get('last_wfo_time', "")))
+        asyncio.create_task(update_bot_state("running", self.state['balance'], self.state.get('free_balance', 0.0), self.state['positions'], self.state.get('last_wfo_time', "")))
         
     def close_position(self, sym, direction, close_price, reason):
         if sym not in self.state['positions'] or direction not in self.state['positions'][sym]:
@@ -303,7 +411,29 @@ class LiveTrader:
             
         # --- EJECUCION REAL ---
         result = self.executor.close_position(sym, direction, amount)
-        real_close_price = result.get('close_price', close_price)
+        
+        if result.get('status') != 'success':
+            logger.error(f"Error devuelto por order_executor al intentar cerrar {direction} en {sym}: {result.get('message')}")
+            
+            # Si el error es ReduceOnly rejected, significa que la posición ya no existe en Binance (quizá se cerró por un timeout o liquidación).
+            # Debemos eliminarla localmente para no entrar en un bucle infinito.
+            if 'ReduceOnly' in str(result.get('message', '')):
+                logger.warning(f"Posición {direction} en {sym} ya no existe en el Exchange. Limpiando estado local.")
+                del self.state['positions'][sym][direction]
+                if not self.state['positions'][sym]:
+                    del self.state['positions'][sym]
+                self.save_state()
+                return
+            else:
+                # No eliminamos la posición para reintentar luego (error de red, etc)
+                return
+            
+        real_close_price = result.get('close_price') or close_price
+        
+        # Registrar cooldown para evitar re-entradas inmediatas (15 minutos)
+        if 'cooldowns' not in self.state:
+            self.state['cooldowns'] = {}
+        self.state['cooldowns'][sym] = time.time() + 900
         
         # Actualizamos balance despues de cerrar
         self.sync_balance()
@@ -344,7 +474,7 @@ class LiveTrader:
         })
         self.save_state()
         
-        asyncio.create_task(update_bot_state("running", self.state['balance'], self.state['positions'], self.state.get('last_wfo_time', "")))
+        asyncio.create_task(update_bot_state("running", self.state['balance'], self.state.get('free_balance', 0.0), self.state['positions'], self.state.get('last_wfo_time', "")))
 
 # --- BUCLE PRINCIPAL ---
 async def live_loop():
@@ -358,7 +488,7 @@ async def live_loop():
     
     trader = LiveTrader()
     logger.info(f"Balance Inicial: ${trader.state['balance']:.2f}")
-    await update_bot_state("started", trader.state['balance'], trader.state['positions'], trader.state.get('last_wfo_time', ""))
+    await update_bot_state("started", trader.state['balance'], trader.state.get('free_balance', 0.0), trader.state['positions'], trader.state.get('last_wfo_time', ""))
     
     # Inicializar WebSocket Streamer en segundo plano
     streamer = WebSocketStreamer(testnet=False)
@@ -378,10 +508,22 @@ async def live_loop():
             now_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
             if trader.state['last_wfo_time'] != now_str:
                 logger.info(f"--- [UTC 00:00] INICIANDO OPTIMIZACION DIARIA WFO ---")
-                for sym in SYMBOLS:
-                    wfo_result = run_wfo_daily(sym)
-                    if wfo_result:
-                        trader.state['wfo_data'][sym] = wfo_result
+                
+                # Función envolvente para correr en el executor
+                def run_all_wfo():
+                    results = {}
+                    for sym in SYMBOLS:
+                        wfo_result = run_wfo_daily(sym)
+                        if wfo_result:
+                            results[sym] = wfo_result
+                    return results
+
+                # Ejecutar el optimizador pesado en un hilo secundario sin bloquear el WebSocket
+                wfo_results = await asyncio.get_event_loop().run_in_executor(None, run_all_wfo)
+                
+                for sym, res in wfo_results.items():
+                    trader.state['wfo_data'][sym] = res
+                    
                 trader.state['last_wfo_time'] = now_str
                 trader.save_state()
                 logger.info(f"--- OPTIMIZACION COMPLETADA ---")
@@ -397,7 +539,7 @@ async def live_loop():
                 trader.state['last_heartbeat'] = time.time()
                 trader.save_state()
                 # Opcional: Actualizar DB de forma ligera
-                asyncio.create_task(update_bot_state("running", trader.state['balance'], trader.state['positions'], trader.state.get('last_wfo_time', "")))
+                asyncio.create_task(update_bot_state("running", trader.state['balance'], trader.state.get('free_balance', 0.0), trader.state['positions'], trader.state.get('last_wfo_time', "")))
             
             # 3. Iterar cada simbolo para gestionar entradas y salidas
             for sym in SYMBOLS:
@@ -408,17 +550,28 @@ async def live_loop():
                 
                 mark_data = streamer.mark_price_data.get(ws_sym)
                 if not mark_data or 'mark_price' not in mark_data:
+                    # Avisar cada 10 segundos si seguimos sin recibir datos para tener visibilidad
+                    if 'last_ws_warn' not in trader.state: trader.state['last_ws_warn'] = 0
+                    if time.time() - trader.state['last_ws_warn'] > 10:
+                        logger.warning(f"[{sym}] Aún esperando stream. Datos en memoria actuales: {list(streamer.mark_price_data.keys())}")
+                        trader.state['last_ws_warn'] = time.time()
                     continue # Esperar a tener datos
                     
                 current_price = mark_data['mark_price']
                 targets = trader.state['wfo_data'][sym]['targets']
                 indicators = trader.state['wfo_data'][sym]['indicators']
                 
+                # Log de seguimiento del precio para monitoreo activo
+                logger.info(f"[{sym}] Precio WS: {current_price} | Objetivo LONG: {targets['long_entry']:.2f} | Objetivo SHORT: {targets['short_entry']:.2f}")
+                
                 # --- CHECK OPEN POSITIONS (SALIDAS) ---
                 if sym in trader.state['positions']:
                     # LONG EXITS
                     if 'LONG' in trader.state['positions'][sym]:
                         pos = trader.state['positions'][sym]['LONG']
+                        pos['current_price'] = current_price
+                        pos['unrealized_pnl'] = (current_price - pos['entry_price']) * pos['amount']
+                        
                         # Avanzar contador simulado de velas (1 vela = 15m)
                         # Como corremos el bucle aprox cada 15 segundos, estimamos
                         if time.time() - pos['open_time'] > (pos['candles_held'] + 1) * 900:
@@ -437,6 +590,9 @@ async def live_loop():
                     # SHORT EXITS
                     if 'SHORT' in trader.state['positions'][sym]:
                         pos = trader.state['positions'][sym]['SHORT']
+                        pos['current_price'] = current_price
+                        pos['unrealized_pnl'] = (pos['entry_price'] - current_price) * pos['amount']
+                        
                         if time.time() - pos['open_time'] > (pos['candles_held'] + 1) * 900:
                             pos['candles_held'] += 1
                             trader.save_state()
@@ -451,16 +607,29 @@ async def live_loop():
                             trader.close_position(sym, 'SHORT', current_price, 'HARD TIMEOUT')
 
                 # --- CHECK NEW ENTRIES ---
+                can_enter = True
+                if sym in trader.state.get('cooldowns', {}):
+                    if time.time() < trader.state['cooldowns'][sym]:
+                        can_enter = False
+                    else:
+                        del trader.state['cooldowns'][sym]
+                        
                 # Validar que no haya posicion abierta antes de entrar
                 has_long = sym in trader.state['positions'] and 'LONG' in trader.state['positions'][sym]
                 has_short = sym in trader.state['positions'] and 'SHORT' in trader.state['positions'][sym]
                 
-                if not has_long and current_price <= targets['long_entry']:
+                if can_enter and not has_long and current_price <= targets['long_entry'] and current_price > targets['long_sl']:
                     trader.open_position(sym, 'LONG', current_price)
                     
-                if not has_short and current_price >= targets['short_entry']:
+                if can_enter and not has_short and current_price >= targets['short_entry'] and current_price < targets['short_sl']:
                     trader.open_position(sym, 'SHORT', current_price)
             
+            # Guardar en SQLite cada 5 segundos para que Telegram vea PnL en tiempo real
+            if 'last_db_update' not in trader.state: trader.state['last_db_update'] = 0
+            if time.time() - trader.state['last_db_update'] > 5:
+                trader.state['last_db_update'] = time.time()
+                asyncio.create_task(update_bot_state("running", trader.state['balance'], trader.state.get('free_balance', 0.0), trader.state['positions'], trader.state.get('last_wfo_time', "")))
+                
             # Reset sleep time on success
             current_sleep = base_sleep
             await asyncio.sleep(current_sleep)

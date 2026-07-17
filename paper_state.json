@@ -1,0 +1,1970 @@
+{
+    "balance": 335.78083423,
+    "positions": {
+        "BTC/USDT": {},
+        "SOL/USDT": {
+            "LONG": {
+                "entry_price": 74.565,
+                "size_usd": 235.04658396099998,
+                "amount": 3.15,
+                "order_id": "3249598218",
+                "open_time": 1784297707.3161492,
+                "candles_held": 0
+            }
+        },
+        "ETH/USDT": {}
+    },
+    "history": [
+        {
+            "sym": "SOL/USDT",
+            "dir": "SHORT",
+            "entry": 77.32499999999999,
+            "exit": 77.205,
+            "pnl": 0.15950946074353123,
+            "reason": "TAKE PROFIT",
+            "time": 1784180108.701706
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "SHORT",
+            "entry": 1928.185,
+            "exit": 1924.605,
+            "pnl": 0.223522872217705,
+            "reason": "TAKE PROFIT",
+            "time": 1784182331.1971204
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 64881.95,
+            "exit": 64807.55,
+            "pnl": 0.10967296011427675,
+            "reason": "TAKE PROFIT",
+            "time": 1784182987.9289994
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "SHORT",
+            "entry": 77.32499999999999,
+            "exit": 77.205,
+            "pnl": 0.15905172444458276,
+            "reason": "TAKE PROFIT",
+            "time": 1784183771.574502
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "SHORT",
+            "entry": 77.32499999999999,
+            "exit": 77.205,
+            "pnl": 0.29011896393041164,
+            "reason": "TAKE PROFIT",
+            "time": 1784185784.9099393
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64631.649999999994,
+            "exit": 64532.55,
+            "pnl": -0.9003107552429441,
+            "reason": "STOP LOSS",
+            "time": 1784186674.1807592
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 77.005,
+            "exit": 76.39500000000001,
+            "pnl": -3.355994936412501,
+            "reason": "STOP LOSS",
+            "time": 1784187371.4498355
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64235.350000000006,
+            "exit": 64235.649999999994,
+            "pnl": -0.30482562345298503,
+            "reason": "STOP LOSS",
+            "time": 1784187576.1036985
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.275,
+            "exit": 76.285,
+            "pnl": -0.2563856525820529,
+            "reason": "STOP LOSS",
+            "time": 1784188273.1432
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64087.850000000006,
+            "exit": 64087.850000000006,
+            "pnl": -0.3063588264,
+            "reason": "STOP LOSS",
+            "time": 1784188477.9828925
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.375,
+            "exit": 76.375,
+            "pnl": -0.30615729980000006,
+            "reason": "STOP LOSS",
+            "time": 1784189175.0532262
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64092.149999999994,
+            "exit": 64092.149999999994,
+            "pnl": -0.305345243328,
+            "reason": "STOP LOSS",
+            "time": 1784189379.8172622
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.765,
+            "exit": 75.765,
+            "pnl": -0.30536113496000006,
+            "reason": "STOP LOSS",
+            "time": 1784190076.5463653
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64030.850000000006,
+            "exit": 64034.149999999994,
+            "pnl": -0.2866249240466436,
+            "reason": "STOP LOSS",
+            "time": 1784190281.128307
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.32499999999999,
+            "exit": 76.32499999999999,
+            "pnl": -0.305697987944,
+            "reason": "STOP LOSS",
+            "time": 1784190977.6389394
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64293.25,
+            "exit": 64292.95,
+            "pnl": -0.30662671570574535,
+            "reason": "STOP LOSS",
+            "time": 1784191182.273119
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.13499999999999,
+            "exit": 76.13499999999999,
+            "pnl": -0.30442547705600004,
+            "reason": "STOP LOSS",
+            "time": 1784191879.2901707
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64070.25,
+            "exit": 64067.25,
+            "pnl": -0.3224704223996186,
+            "reason": "STOP LOSS",
+            "time": 1784192083.8174107
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.11500000000001,
+            "exit": 76.11500000000001,
+            "pnl": -0.3044176324720001,
+            "reason": "STOP LOSS",
+            "time": 1784192780.8698432
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64099.95,
+            "exit": 64099.95,
+            "pnl": -0.30398019054400005,
+            "reason": "STOP LOSS",
+            "time": 1784192985.116807
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.14500000000001,
+            "exit": 76.14500000000001,
+            "pnl": -0.303883675152,
+            "reason": "STOP LOSS",
+            "time": 1784193682.5124247
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64044.850000000006,
+            "exit": 64044.850000000006,
+            "pnl": -0.30353396381600006,
+            "reason": "STOP LOSS",
+            "time": 1784193886.8409202
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.11500000000001,
+            "exit": 76.11500000000001,
+            "pnl": -0.30338122844800003,
+            "reason": "STOP LOSS",
+            "time": 1784194584.244262
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64064.149999999994,
+            "exit": 64047.45,
+            "pnl": -0.40168875716434677,
+            "reason": "STOP LOSS",
+            "time": 1784194788.5138454
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.005,
+            "exit": 76.005,
+            "pnl": -0.30267646512000007,
+            "reason": "STOP LOSS",
+            "time": 1784195485.4188445
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64039.350000000006,
+            "exit": 64044.05,
+            "pnl": -0.27464215608986764,
+            "reason": "STOP LOSS",
+            "time": 1784195690.1782053
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.055,
+            "exit": 76.055,
+            "pnl": -0.30195984132000003,
+            "reason": "STOP LOSS",
+            "time": 1784196386.661216
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64151.05,
+            "exit": 64151.05,
+            "pnl": -0.301564833904,
+            "reason": "STOP LOSS",
+            "time": 1784196591.3444855
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.215,
+            "exit": 76.215,
+            "pnl": -0.3011782864,
+            "reason": "STOP LOSS",
+            "time": 1784197287.917855
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64150.05,
+            "exit": 64150.05,
+            "pnl": -0.300796671688,
+            "reason": "STOP LOSS",
+            "time": 1784197492.9343016
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.255,
+            "exit": 76.255,
+            "pnl": -0.30050550508800006,
+            "reason": "STOP LOSS",
+            "time": 1784198189.1280384
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64155.55,
+            "exit": 64155.55,
+            "pnl": -0.299777035008,
+            "reason": "STOP LOSS",
+            "time": 1784198394.0891113
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.11500000000001,
+            "exit": 76.11500000000001,
+            "pnl": -0.29949969534400006,
+            "reason": "STOP LOSS",
+            "time": 1784199090.8365135
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64162.25,
+            "exit": 64158.850000000006,
+            "pnl": -0.31915550607397286,
+            "reason": "STOP LOSS",
+            "time": 1784199295.1916113
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.035,
+            "exit": 76.035,
+            "pnl": -0.29908370643200005,
+            "reason": "STOP LOSS",
+            "time": 1784199992.0459561
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64121.45,
+            "exit": 64121.45,
+            "pnl": -0.298869375624,
+            "reason": "STOP LOSS",
+            "time": 1784200196.6136928
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.07499999999999,
+            "exit": 76.07499999999999,
+            "pnl": -0.298615753968,
+            "reason": "STOP LOSS",
+            "time": 1784200893.256149
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64219.95,
+            "exit": 64219.95,
+            "pnl": -0.29837172281600005,
+            "reason": "STOP LOSS",
+            "time": 1784201098.0772195
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.07499999999999,
+            "exit": 76.07499999999999,
+            "pnl": -0.298000397864,
+            "reason": "STOP LOSS",
+            "time": 1784201794.6821907
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64174.350000000006,
+            "exit": 64174.350000000006,
+            "pnl": -0.297883276784,
+            "reason": "STOP LOSS",
+            "time": 1784201999.0874708
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.065,
+            "exit": 76.065,
+            "pnl": -0.29763389772800003,
+            "reason": "STOP LOSS",
+            "time": 1784202696.074808
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64173.350000000006,
+            "exit": 64173.350000000006,
+            "pnl": -0.29751096435200003,
+            "reason": "STOP LOSS",
+            "time": 1784202900.9455543
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.11500000000001,
+            "exit": 76.11500000000001,
+            "pnl": -0.29706782936000004,
+            "reason": "STOP LOSS",
+            "time": 1784203597.446948
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64143.649999999994,
+            "exit": 64143.649999999994,
+            "pnl": -0.296970587376,
+            "reason": "STOP LOSS",
+            "time": 1784203802.6532505
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.035,
+            "exit": 76.035,
+            "pnl": -0.29674988337600006,
+            "reason": "STOP LOSS",
+            "time": 1784204499.001402
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64090.25,
+            "exit": 64090.25,
+            "pnl": -0.29648604304000004,
+            "reason": "STOP LOSS",
+            "time": 1784204704.0334008
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.055,
+            "exit": 76.055,
+            "pnl": -0.296290751,
+            "reason": "STOP LOSS",
+            "time": 1784205400.4497147
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63937.350000000006,
+            "exit": 63937.350000000006,
+            "pnl": -0.29578374109600003,
+            "reason": "STOP LOSS",
+            "time": 1784205605.4922051
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.875,
+            "exit": 75.86500000000001,
+            "pnl": -0.34442496037420284,
+            "reason": "STOP LOSS",
+            "time": 1784206301.8403037
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64001.850000000006,
+            "exit": 64001.850000000006,
+            "pnl": -0.295647938088,
+            "reason": "STOP LOSS",
+            "time": 1784206506.8290803
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.935,
+            "exit": 75.935,
+            "pnl": -0.295197814136,
+            "reason": "STOP LOSS",
+            "time": 1784207203.5113177
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63999.95,
+            "exit": 63999.95,
+            "pnl": -0.29509296704000004,
+            "reason": "STOP LOSS",
+            "time": 1784207408.7156005
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.275,
+            "exit": 76.275,
+            "pnl": -0.29475340681600004,
+            "reason": "STOP LOSS",
+            "time": 1784208105.17552
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64154.55,
+            "exit": 64154.55,
+            "pnl": -0.294097159376,
+            "reason": "STOP LOSS",
+            "time": 1784208310.2942345
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.505,
+            "exit": 76.505,
+            "pnl": -0.29387528934400003,
+            "reason": "STOP LOSS",
+            "time": 1784209006.4261725
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64312.350000000006,
+            "exit": 64307.05,
+            "pnl": -0.3234671873337019,
+            "reason": "STOP LOSS",
+            "time": 1784209212.1510034
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.33500000000001,
+            "exit": 76.32499999999999,
+            "pnl": -0.34107840104436243,
+            "reason": "STOP LOSS",
+            "time": 1784209907.7142127
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64229.45,
+            "exit": 64234.850000000006,
+            "pnl": -0.26182210925419286,
+            "reason": "STOP LOSS",
+            "time": 1784210114.060987
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.515,
+            "exit": 76.505,
+            "pnl": -0.3400417916377091,
+            "reason": "STOP LOSS",
+            "time": 1784210809.0875595
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.525,
+            "exit": 76.525,
+            "pnl": -0.291694569904,
+            "reason": "STOP LOSS",
+            "time": 1784211710.7691624
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1920.895,
+            "exit": 1885.775,
+            "pnl": -4.036762623678757,
+            "reason": "STOP LOSS",
+            "time": 1784211792.1415923
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64610.55,
+            "exit": 64780.9,
+            "pnl": 0.6696455282522991,
+            "reason": "TAKE PROFIT",
+            "time": 1784212067.6783874
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.61500000000001,
+            "exit": 76.565,
+            "pnl": -0.5780177108700991,
+            "reason": "STOP LOSS",
+            "time": 1784212662.6787627
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1887.625,
+            "exit": 1887.625,
+            "pnl": -0.317856659456,
+            "reason": "STOP LOSS",
+            "time": 1784212693.6570132
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.565,
+            "exit": 76.565,
+            "pnl": -0.31760475246400005,
+            "reason": "STOP LOSS",
+            "time": 1784213567.1957746
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1882.435,
+            "exit": 1883.085,
+            "pnl": -0.18012058648154455,
+            "reason": "STOP LOSS",
+            "time": 1784213595.1139488
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64676.45,
+            "exit": 64529.350000000006,
+            "pnl": -1.220554340131761,
+            "reason": "STOP LOSS",
+            "time": 1784213647.4723744
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.13499999999999,
+            "exit": 76.13499999999999,
+            "pnl": -0.316213635504,
+            "reason": "STOP LOSS",
+            "time": 1784214469.0103836
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1875.565,
+            "exit": 1875.665,
+            "pnl": -0.29486425734841193,
+            "reason": "STOP LOSS",
+            "time": 1784214496.4236143
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64371.75,
+            "exit": 64371.75,
+            "pnl": -0.31564019266400006,
+            "reason": "STOP LOSS",
+            "time": 1784214548.601631
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.235,
+            "exit": 76.235,
+            "pnl": -0.31535659088800005,
+            "reason": "STOP LOSS",
+            "time": 1784215371.039808
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1878.585,
+            "exit": 1878.585,
+            "pnl": -0.31506311688000005,
+            "reason": "STOP LOSS",
+            "time": 1784215397.5274239
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64540.649999999994,
+            "exit": 64821.75,
+            "pnl": 1.3990557929009135,
+            "reason": "TAKE PROFIT",
+            "time": 1784215605.4771178
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1885.0349999999999,
+            "exit": 1885.0349999999999,
+            "pnl": -0.31525163248,
+            "reason": "STOP LOSS",
+            "time": 1784216298.960413
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.66499999999999,
+            "exit": 76.565,
+            "pnl": -0.8292600334452092,
+            "reason": "STOP LOSS",
+            "time": 1784216449.896309
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64687.25,
+            "exit": 64785.850000000006,
+            "pnl": 0.284676964659588,
+            "reason": "TAKE PROFIT",
+            "time": 1784217086.7525592
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1881.855,
+            "exit": 1881.855,
+            "pnl": -0.31410150528,
+            "reason": "STOP LOSS",
+            "time": 1784217200.7165964
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.60499999999999,
+            "exit": 76.555,
+            "pnl": -0.5698587146596917,
+            "reason": "STOP LOSS",
+            "time": 1784217374.055105
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64578.350000000006,
+            "exit": 64529.75,
+            "pnl": -0.6074418540124847,
+            "reason": "STOP LOSS",
+            "time": 1784218041.9230835
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1877.335,
+            "exit": 1877.335,
+            "pnl": -0.31274785263200006,
+            "reason": "STOP LOSS",
+            "time": 1784218102.1014984
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.245,
+            "exit": 76.245,
+            "pnl": -0.31235129576000004,
+            "reason": "STOP LOSS",
+            "time": 1784218276.1010296
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64427.850000000006,
+            "exit": 64427.850000000006,
+            "pnl": -0.3120191593120001,
+            "reason": "STOP LOSS",
+            "time": 1784218943.9791162
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1875.1149999999998,
+            "exit": 1875.1149999999998,
+            "pnl": -0.31168700340800004,
+            "reason": "STOP LOSS",
+            "time": 1784219003.260853
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.305,
+            "exit": 76.315,
+            "pnl": -0.26030767785720854,
+            "reason": "STOP LOSS",
+            "time": 1784219177.8127966
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64471.75,
+            "exit": 64468.149999999994,
+            "pnl": -0.3326648502627232,
+            "reason": "STOP LOSS",
+            "time": 1784219845.815517
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1876.9250000000002,
+            "exit": 1876.875,
+            "pnl": -0.3209935748135727,
+            "reason": "STOP LOSS",
+            "time": 1784219904.5373774
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.235,
+            "exit": 76.245,
+            "pnl": -0.2594550694382514,
+            "reason": "STOP LOSS",
+            "time": 1784220079.6928
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64474.95,
+            "exit": 64474.95,
+            "pnl": -0.309930284088,
+            "reason": "STOP LOSS",
+            "time": 1784220747.76348
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1878.2649999999999,
+            "exit": 1878.375,
+            "pnl": -0.2869788772412731,
+            "reason": "STOP LOSS",
+            "time": 1784220805.5885017
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 76.265,
+            "exit": 76.265,
+            "pnl": -0.30938442732800003,
+            "reason": "STOP LOSS",
+            "time": 1784220981.584821
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64309.25,
+            "exit": 64309.25,
+            "pnl": -0.30909643510400003,
+            "reason": "STOP LOSS",
+            "time": 1784221649.4951978
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1874.705,
+            "exit": 1874.705,
+            "pnl": -0.30877885962400003,
+            "reason": "STOP LOSS",
+            "time": 1784221706.8688402
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.91499999999999,
+            "exit": 75.91499999999999,
+            "pnl": -0.30852533633600004,
+            "reason": "STOP LOSS",
+            "time": 1784221883.578827
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64153.850000000006,
+            "exit": 64153.850000000006,
+            "pnl": -0.307264892464,
+            "reason": "STOP LOSS",
+            "time": 1784222551.125403
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1871.565,
+            "exit": 1871.665,
+            "pnl": -0.2864076177652102,
+            "reason": "STOP LOSS",
+            "time": 1784222608.341199
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.755,
+            "exit": 75.755,
+            "pnl": -0.30656266748000005,
+            "reason": "STOP LOSS",
+            "time": 1784222785.2921557
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64206.850000000006,
+            "exit": 64206.850000000006,
+            "pnl": -0.30615572636000005,
+            "reason": "STOP LOSS",
+            "time": 1784223453.0015364
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1873.2350000000001,
+            "exit": 1873.2350000000001,
+            "pnl": -0.305863229488,
+            "reason": "STOP LOSS",
+            "time": 1784223509.434423
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.905,
+            "exit": 75.905,
+            "pnl": -0.305617089304,
+            "reason": "STOP LOSS",
+            "time": 1784223687.1277466
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64070.45,
+            "exit": 64070.45,
+            "pnl": -0.305131215456,
+            "reason": "STOP LOSS",
+            "time": 1784224354.822349
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1868.995,
+            "exit": 1868.995,
+            "pnl": -0.304450185528,
+            "reason": "STOP LOSS",
+            "time": 1784224410.4640255
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.405,
+            "exit": 75.405,
+            "pnl": -0.30409428947200007,
+            "reason": "STOP LOSS",
+            "time": 1784224588.852419
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64110.05,
+            "exit": 64110.05,
+            "pnl": -0.30381061408000004,
+            "reason": "STOP LOSS",
+            "time": 1784225256.524543
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1871.955,
+            "exit": 1871.9650000000001,
+            "pnl": -0.3014844323234481,
+            "reason": "STOP LOSS",
+            "time": 1784225311.6340346
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.685,
+            "exit": 75.685,
+            "pnl": -0.303252996576,
+            "reason": "STOP LOSS",
+            "time": 1784225490.8968484
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64253.95,
+            "exit": 64257.95,
+            "pnl": -0.27939478898857545,
+            "reason": "STOP LOSS",
+            "time": 1784226158.6468918
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1877.005,
+            "exit": 1877.005,
+            "pnl": -0.30257566004,
+            "reason": "STOP LOSS",
+            "time": 1784226212.8806057
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.86500000000001,
+            "exit": 75.86500000000001,
+            "pnl": -0.302284288528,
+            "reason": "STOP LOSS",
+            "time": 1784226392.818252
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64099.95,
+            "exit": 64111.05,
+            "pnl": -0.23660035797830167,
+            "reason": "STOP LOSS",
+            "time": 1784227060.6933496
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1872.995,
+            "exit": 1872.995,
+            "pnl": -0.3017233086000001,
+            "reason": "STOP LOSS",
+            "time": 1784227114.0429883
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.445,
+            "exit": 75.445,
+            "pnl": -0.30138117572800005,
+            "reason": "STOP LOSS",
+            "time": 1784227294.8214872
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64245.649999999994,
+            "exit": 64244.45,
+            "pnl": -0.3079685983973268,
+            "reason": "STOP LOSS",
+            "time": 1784227962.7774715
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1875.255,
+            "exit": 1875.395,
+            "pnl": -0.27260942177628317,
+            "reason": "STOP LOSS",
+            "time": 1784228015.1584854
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.655,
+            "exit": 75.655,
+            "pnl": -0.30036217416,
+            "reason": "STOP LOSS",
+            "time": 1784228196.7442124
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64185.95,
+            "exit": 64185.95,
+            "pnl": -0.29967091483999997,
+            "reason": "STOP LOSS",
+            "time": 1784228864.485302
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1874.0749999999998,
+            "exit": 1874.0749999999998,
+            "pnl": -0.299355436432,
+            "reason": "STOP LOSS",
+            "time": 1784228916.3127673
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.625,
+            "exit": 75.625,
+            "pnl": -0.299099024328,
+            "reason": "STOP LOSS",
+            "time": 1784229098.5640168
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64191.45,
+            "exit": 64191.45,
+            "pnl": -0.298820408328,
+            "reason": "STOP LOSS",
+            "time": 1784229766.3028297
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1871.795,
+            "exit": 1871.795,
+            "pnl": -0.298505971496,
+            "reason": "STOP LOSS",
+            "time": 1784229817.662763
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.66499999999999,
+            "exit": 75.66499999999999,
+            "pnl": -0.298213349176,
+            "reason": "STOP LOSS",
+            "time": 1784230000.6389663
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64205.149999999994,
+            "exit": 64211.850000000006,
+            "pnl": -0.2590041465602698,
+            "reason": "STOP LOSS",
+            "time": 1784230668.2306187
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1874.4050000000002,
+            "exit": 1874.4050000000002,
+            "pnl": -0.29760677490400006,
+            "reason": "STOP LOSS",
+            "time": 1784230719.0538204
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.82499999999999,
+            "exit": 75.83500000000001,
+            "pnl": -0.24832443750365732,
+            "reason": "STOP LOSS",
+            "time": 1784230902.6761906
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64211.649999999994,
+            "exit": 64211.649999999994,
+            "pnl": -0.29694762376,
+            "reason": "STOP LOSS",
+            "time": 1784231569.8095987
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1873.6750000000002,
+            "exit": 1873.6750000000002,
+            "pnl": -0.29645334049600003,
+            "reason": "STOP LOSS",
+            "time": 1784231620.086424
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.875,
+            "exit": 75.875,
+            "pnl": -0.2961745467360001,
+            "reason": "STOP LOSS",
+            "time": 1784231804.597065
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64181.05,
+            "exit": 64181.05,
+            "pnl": -0.29586012396,
+            "reason": "STOP LOSS",
+            "time": 1784232471.9462552
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1872.6750000000002,
+            "exit": 1872.6750000000002,
+            "pnl": -0.295588285336,
+            "reason": "STOP LOSS",
+            "time": 1784232521.4440937
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.725,
+            "exit": 75.725,
+            "pnl": -0.295179493352,
+            "reason": "STOP LOSS",
+            "time": 1784232706.5715008
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64188.05,
+            "exit": 64188.05,
+            "pnl": -0.29490451367200005,
+            "reason": "STOP LOSS",
+            "time": 1784233373.6837368
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1873.355,
+            "exit": 1873.435,
+            "pnl": -0.27892390335043404,
+            "reason": "STOP LOSS",
+            "time": 1784233422.6404598
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.795,
+            "exit": 75.795,
+            "pnl": -0.294378266472,
+            "reason": "STOP LOSS",
+            "time": 1784233608.6611917
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64134.75,
+            "exit": 64134.75,
+            "pnl": -0.29406541432800004,
+            "reason": "STOP LOSS",
+            "time": 1784234275.7047453
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1872.9650000000001,
+            "exit": 1872.9650000000001,
+            "pnl": -0.29371461134400006,
+            "reason": "STOP LOSS",
+            "time": 1784234324.013771
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.715,
+            "exit": 75.715,
+            "pnl": -0.29342477660000005,
+            "reason": "STOP LOSS",
+            "time": 1784234510.34812
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64098.55,
+            "exit": 64098.55,
+            "pnl": -0.29280277852000003,
+            "reason": "STOP LOSS",
+            "time": 1784235177.421983
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1872.745,
+            "exit": 1872.745,
+            "pnl": -0.29249817872800005,
+            "reason": "STOP LOSS",
+            "time": 1784235225.24202
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.815,
+            "exit": 75.815,
+            "pnl": -0.29223490377600003,
+            "reason": "STOP LOSS",
+            "time": 1784235412.372024
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64152.45,
+            "exit": 64152.45,
+            "pnl": -0.291847825768,
+            "reason": "STOP LOSS",
+            "time": 1784236079.0545812
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1875.025,
+            "exit": 1875.025,
+            "pnl": -0.291611130616,
+            "reason": "STOP LOSS",
+            "time": 1784236126.3382747
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.86500000000001,
+            "exit": 75.86500000000001,
+            "pnl": -0.29132649228,
+            "reason": "STOP LOSS",
+            "time": 1784236314.4668853
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64171.149999999994,
+            "exit": 64171.149999999994,
+            "pnl": -0.29105500428000003,
+            "reason": "STOP LOSS",
+            "time": 1784236981.161575
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1876.6550000000002,
+            "exit": 1876.6550000000002,
+            "pnl": -0.29082454324,
+            "reason": "STOP LOSS",
+            "time": 1784237027.5420809
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.88499999999999,
+            "exit": 75.88499999999999,
+            "pnl": -0.29054479701600006,
+            "reason": "STOP LOSS",
+            "time": 1784237216.191677
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64176.05,
+            "exit": 64176.05,
+            "pnl": -0.290274440224,
+            "reason": "STOP LOSS",
+            "time": 1784237882.887262
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1879.085,
+            "exit": 1879.085,
+            "pnl": -0.289915934328,
+            "reason": "STOP LOSS",
+            "time": 1784237928.5549707
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.965,
+            "exit": 75.965,
+            "pnl": -0.28968503912800003,
+            "reason": "STOP LOSS",
+            "time": 1784238117.9407694
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64185.850000000006,
+            "exit": 64185.95,
+            "pnl": -0.28885185054028667,
+            "reason": "STOP LOSS",
+            "time": 1784238784.8050902
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1877.5349999999999,
+            "exit": 1877.5349999999999,
+            "pnl": -0.289133497936,
+            "reason": "STOP LOSS",
+            "time": 1784238829.9854205
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.86500000000001,
+            "exit": 75.86500000000001,
+            "pnl": -0.28879510977600004,
+            "reason": "STOP LOSS",
+            "time": 1784239019.7812006
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64150.45,
+            "exit": 64150.45,
+            "pnl": -0.28833619137600003,
+            "reason": "STOP LOSS",
+            "time": 1784239686.779243
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1880.5749999999998,
+            "exit": 1880.5749999999998,
+            "pnl": -0.287993620808,
+            "reason": "STOP LOSS",
+            "time": 1784239731.4585197
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.935,
+            "exit": 75.935,
+            "pnl": -0.28776236290400004,
+            "reason": "STOP LOSS",
+            "time": 1784239921.4674118
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64052.75,
+            "exit": 64052.75,
+            "pnl": -0.28749465248,
+            "reason": "STOP LOSS",
+            "time": 1784240588.6041007
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1875.315,
+            "exit": 1875.315,
+            "pnl": -0.287233139656,
+            "reason": "STOP LOSS",
+            "time": 1784240632.8655384
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.685,
+            "exit": 75.67500000000001,
+            "pnl": -0.3343995869253932,
+            "reason": "STOP LOSS",
+            "time": 1784240823.4694839
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 64091.649999999994,
+            "exit": 64091.649999999994,
+            "pnl": -0.28669396211200004,
+            "reason": "STOP LOSS",
+            "time": 1784241490.5783622
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1875.4250000000002,
+            "exit": 1875.4250000000002,
+            "pnl": -0.2863939984640001,
+            "reason": "STOP LOSS",
+            "time": 1784241533.938994
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.565,
+            "exit": 75.565,
+            "pnl": -0.286138554568,
+            "reason": "STOP LOSS",
+            "time": 1784241725.419027
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63952.149999999994,
+            "exit": 63956.149999999994,
+            "pnl": -0.2635214786470319,
+            "reason": "STOP LOSS",
+            "time": 1784242392.57969
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1869.0149999999999,
+            "exit": 1869.1350000000002,
+            "pnl": -0.26269098002903246,
+            "reason": "STOP LOSS",
+            "time": 1784242435.2598183
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.275,
+            "exit": 75.275,
+            "pnl": -0.285352636704,
+            "reason": "STOP LOSS",
+            "time": 1784242627.2372847
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63917.25,
+            "exit": 63917.25,
+            "pnl": -0.285048948016,
+            "reason": "STOP LOSS",
+            "time": 1784243294.5746422
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1865.565,
+            "exit": 1865.565,
+            "pnl": -0.28481472423200005,
+            "reason": "STOP LOSS",
+            "time": 1784243336.689404
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.235,
+            "exit": 75.235,
+            "pnl": -0.2845787108,
+            "reason": "STOP LOSS",
+            "time": 1784243528.9131663
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63754.25,
+            "exit": 63754.25,
+            "pnl": -0.28431377153600007,
+            "reason": "STOP LOSS",
+            "time": 1784244196.2768142
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1857.9850000000001,
+            "exit": 1857.9850000000001,
+            "pnl": -0.28398710935200006,
+            "reason": "STOP LOSS",
+            "time": 1784244237.8122444
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.10499999999999,
+            "exit": 75.10499999999999,
+            "pnl": -0.283745859552,
+            "reason": "STOP LOSS",
+            "time": 1784244431.0320668
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63722.45,
+            "exit": 63722.45,
+            "pnl": -0.28344347748000004,
+            "reason": "STOP LOSS",
+            "time": 1784245098.1257467
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1859.005,
+            "exit": 1859.005,
+            "pnl": -0.28313399677600004,
+            "reason": "STOP LOSS",
+            "time": 1784245139.2584515
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.16499999999999,
+            "exit": 75.16499999999999,
+            "pnl": -0.28287294894400006,
+            "reason": "STOP LOSS",
+            "time": 1784245332.763412
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63849.05,
+            "exit": 63849.05,
+            "pnl": -0.28257163758400006,
+            "reason": "STOP LOSS",
+            "time": 1784246000.124153
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1864.5349999999999,
+            "exit": 1864.5349999999999,
+            "pnl": -0.2823133991280001,
+            "reason": "STOP LOSS",
+            "time": 1784246040.2193127
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.285,
+            "exit": 75.285,
+            "pnl": -0.282086371136,
+            "reason": "STOP LOSS",
+            "time": 1784246234.4646406
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63726.25,
+            "exit": 63799.95,
+            "pnl": 0.12554076730258967,
+            "reason": "TAKE PROFIT",
+            "time": 1784247141.037034
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "SHORT",
+            "entry": 1866.0349999999999,
+            "exit": 1863.6149999999998,
+            "pnl": 0.1748108674026688,
+            "reason": "TAKE PROFIT",
+            "time": 1784247524.0025642
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "SHORT",
+            "entry": 75.39500000000001,
+            "exit": 75.275,
+            "pnl": 0.2785115956405268,
+            "reason": "TAKE PROFIT",
+            "time": 1784247537.0128279
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1856.255,
+            "exit": 1850.315,
+            "pnl": -1.401636908959275,
+            "reason": "STOP LOSS",
+            "time": 1784248590.0392182
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63753.350000000006,
+            "exit": 63636.55,
+            "pnl": -0.9223003047483415,
+            "reason": "STOP LOSS",
+            "time": 1784248590.9393413
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.005,
+            "exit": 75.245,
+            "pnl": 0.8363934294652514,
+            "reason": "TAKE PROFIT",
+            "time": 1784248738.3061259
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "SHORT",
+            "entry": 1865.995,
+            "exit": 1863.2849999999999,
+            "pnl": 0.2270147878336255,
+            "reason": "TAKE PROFIT",
+            "time": 1784251092.7180557
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 63909.25,
+            "exit": 63828.55,
+            "pnl": 0.161037507910471,
+            "reason": "TAKE PROFIT",
+            "time": 1784251220.6168225
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "SHORT",
+            "entry": 75.485,
+            "exit": 75.285,
+            "pnl": 0.643670109885422,
+            "reason": "TAKE PROFIT",
+            "time": 1784252529.5738535
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63742.95,
+            "exit": 63553.05,
+            "pnl": -1.309972863965446,
+            "reason": "STOP LOSS",
+            "time": 1784252841.8301187
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1856.5549999999998,
+            "exit": 1850.105,
+            "pnl": -1.4810312036611186,
+            "reason": "STOP LOSS",
+            "time": 1784252842.2970278
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63505.350000000006,
+            "exit": 63505.350000000006,
+            "pnl": -0.275729744792,
+            "reason": "STOP LOSS",
+            "time": 1784253755.8866177
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1849.795,
+            "exit": 1849.795,
+            "pnl": -0.275729744792,
+            "reason": "STOP LOSS",
+            "time": 1784253756.3648698
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63594.95,
+            "exit": 63594.95,
+            "pnl": -0.275047815392,
+            "reason": "STOP LOSS",
+            "time": 1784254658.0047152
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1853.3649999999998,
+            "exit": 1850.9450000000002,
+            "pnl": -0.7230045129515726,
+            "reason": "STOP LOSS",
+            "time": 1784255036.3529263
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63516.149999999994,
+            "exit": 63516.149999999994,
+            "pnl": -0.2737359357360001,
+            "reason": "STOP LOSS",
+            "time": 1784255563.7010038
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1846.795,
+            "exit": 1846.795,
+            "pnl": -0.27348581623199997,
+            "reason": "STOP LOSS",
+            "time": 1784255938.7434945
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63418.149999999994,
+            "exit": 63418.149999999994,
+            "pnl": -0.27236618639200005,
+            "reason": "STOP LOSS",
+            "time": 1784256465.6895883
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1844.335,
+            "exit": 1844.335,
+            "pnl": -0.27208802892,
+            "reason": "STOP LOSS",
+            "time": 1784256840.907662
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.005,
+            "exit": 75.245,
+            "pnl": 0.8250701049813502,
+            "reason": "TAKE PROFIT",
+            "time": 1784257663.0317495
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63647.95,
+            "exit": 63640.25,
+            "pnl": -0.14729709119143938,
+            "reason": "STOP LOSS",
+            "time": 1784258300.3576589
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "SHORT",
+            "entry": 75.39500000000001,
+            "exit": 75.285,
+            "pnl": 0.1054305611924708,
+            "reason": "TAKE PROFIT",
+            "time": 1784259160.8974729
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63661.55,
+            "exit": 63640.05,
+            "pnl": -0.18203911599579142,
+            "reason": "STOP LOSS",
+            "time": 1784259427.8924716
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1853.505,
+            "exit": 1850.955,
+            "pnl": -0.742003564801199,
+            "reason": "STOP LOSS",
+            "time": 1784260253.1984918
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1851.0749999999998,
+            "exit": 1850.915,
+            "pnl": -0.21148677155071863,
+            "reason": "STOP LOSS",
+            "time": 1784261594.9566143
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.005,
+            "exit": 75.245,
+            "pnl": 0.5721927418014975,
+            "reason": "TAKE PROFIT",
+            "time": 1784263590.7288446
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1850.995,
+            "exit": 1850.8850000000002,
+            "pnl": -0.2049173010827824,
+            "reason": "STOP LOSS",
+            "time": 1784263674.456685
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.005,
+            "exit": 74.315,
+            "pnl": -2.3842449182615812,
+            "reason": "STOP LOSS",
+            "time": 1784267167.1610262
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.36500000000001,
+            "exit": 74.315,
+            "pnl": -0.3495002557155515,
+            "reason": "STOP LOSS",
+            "time": 1784268081.4528759
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.455,
+            "exit": 74.33500000000001,
+            "pnl": -0.5700189885539432,
+            "reason": "STOP LOSS",
+            "time": 1784276261.8667717
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.345,
+            "exit": 74.33500000000001,
+            "pnl": -0.22053793487201206,
+            "reason": "STOP LOSS",
+            "time": 1784277259.7485847
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.485,
+            "exit": 74.32499999999999,
+            "pnl": -0.6952745066578322,
+            "reason": "STOP LOSS",
+            "time": 1784292214.8617833
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.39500000000001,
+            "exit": 74.33500000000001,
+            "pnl": -0.3782394551993167,
+            "reason": "STOP LOSS",
+            "time": 1784293188.5871372
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.345,
+            "exit": 74.32499999999999,
+            "pnl": -0.2514326745096464,
+            "reason": "STOP LOSS",
+            "time": 1784296806.5146291
+        }
+    ],
+    "cooldowns": {},
+    "wfo_data": {
+        "BTC/USDT": {
+            "params": {
+                "grid_spacing_mult_l": 0.5043277567375897,
+                "tp_mult_l": 0.7385975532641074,
+                "sl_mult_l": 1.1376314496330115,
+                "grid_spacing_mult_s": 0.9232176394156275,
+                "tp_mult_s": 0.7567605354215303,
+                "sl_mult_s": 2.3021178814287735
+            },
+            "targets": {
+                "long_entry": 63758.44968670429,
+                "long_tp": 63796.74620124048,
+                "long_sl": 63641.488947798905,
+                "short_entry": 63905.216694955445,
+                "short_tp": 63833.38748606052,
+                "short_sl": 64141.89915353732
+            },
+            "indicators": {
+                "atr": 102.81074678720822,
+                "ema20": 64046.0374567139,
+                "close": 63810.3,
+                "timestamp": "2026-07-16 23:45:00"
+            }
+        },
+        "ETH/USDT": {
+            "params": {
+                "grid_spacing_mult_l": 1.5144519708475552,
+                "tp_mult_l": 0.9400408713968673,
+                "sl_mult_l": 1.513983779769451,
+                "grid_spacing_mult_s": 0.5072822851309204,
+                "tp_mult_s": 0.9826920404732084,
+                "sl_mult_s": 3.2370878296466223
+            },
+            "targets": {
+                "long_entry": 1857.349840066769,
+                "long_tp": 1863.3568515787688,
+                "long_sl": 1850.961655644103,
+                "short_entry": 1865.8804541019992,
+                "short_tp": 1863.7770468929664,
+                "short_sl": 1879.5391962394476
+            },
+            "indicators": {
+                "atr": 4.219453674489717,
+                "ema20": 1870.7644798692822,
+                "close": 1863.74,
+                "timestamp": "2026-07-16 23:45:00"
+            }
+        },
+        "SOL/USDT": {
+            "params": {
+                "grid_spacing_mult_l": 1.3191277937401575,
+                "tp_mult_l": 0.8597081477506924,
+                "sl_mult_l": 3.321584866904868,
+                "grid_spacing_mult_s": 0.5349659269243602,
+                "tp_mult_s": 0.9303097751573055,
+                "sl_mult_s": 1.8605786113241218
+            },
+            "targets": {
+                "long_entry": 75.01161736655699,
+                "long_tp": 75.24234810324273,
+                "long_sl": 74.33582560626301,
+                "short_entry": 75.38884128509123,
+                "short_tp": 75.28758517363018,
+                "short_sl": 75.76738458453843
+            },
+            "indicators": {
+                "atr": 0.2034546119918041,
+                "ema20": 75.59871758323922,
+                "close": 75.28,
+                "timestamp": "2026-07-16 23:45:00"
+            }
+        }
+    },
+    "last_wfo_time": "2026-07-17",
+    "last_heartbeat": 1784294659.0956938,
+    "free_balance": 335.78083423,
+    "last_db_update": 1784297701.9441152
+}

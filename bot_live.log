@@ -1,95 +1,79 @@
-2026-07-13 22:09:14,231 - INFO - ==================================================
-2026-07-13 22:09:14,231 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
-2026-07-13 22:09:14,232 - INFO - MODO: [SIMULADOR] PAPER TRADING
-2026-07-13 22:09:14,232 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-2026-07-13 22:09:14,232 - INFO - ==================================================
-2026-07-13 22:09:14,233 - INFO - Balance Inicial Ficticio: $1000.00
-2026-07-13 22:09:14,233 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
-2026-07-13 22:09:19,247 - INFO - --- [UTC 00:00] INICIANDO OPTIMIZACION DIARIA WFO ---
-2026-07-13 22:09:19,247 - INFO - Ejecutando Optimizador WFO para BTC/USDT (Ultimos 3 dias)...
-2026-07-13 22:09:22,322 - INFO - Ejecutando Optimizador WFO para ETH/USDT (Ultimos 3 dias)...
-2026-07-13 22:09:22,653 - INFO - Ejecutando Optimizador WFO para SOL/USDT (Ultimos 3 dias)...
-2026-07-13 22:09:22,996 - INFO - --- OPTIMIZACION COMPLETADA ---
-2026-07-13 22:17:54,407 - INFO - ==================================================
-2026-07-13 22:17:54,407 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
-2026-07-13 22:17:54,407 - INFO - MODO: [SIMULADOR] PAPER TRADING
-2026-07-13 22:17:54,408 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-2026-07-13 22:17:54,408 - INFO - ==================================================
-2026-07-13 22:17:54,408 - INFO - Balance Inicial Ficticio: $1000.00
-2026-07-13 22:17:54,409 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
-2026-07-13 22:26:20,314 - INFO - ==================================================
-2026-07-13 22:26:20,315 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
-2026-07-13 22:26:20,315 - INFO - MODO: [SIMULADOR] PAPER TRADING
-2026-07-13 22:26:20,315 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-2026-07-13 22:26:20,315 - INFO - ==================================================
-2026-07-13 22:26:20,316 - INFO - Balance Inicial Ficticio: $1000.00
-2026-07-13 22:26:20,316 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
-2026-07-13 22:33:35,448 - INFO - ==================================================
-2026-07-13 22:33:35,448 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
-2026-07-13 22:33:35,448 - INFO - MODO: [SIMULADOR] PAPER TRADING
-2026-07-13 22:33:35,448 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-2026-07-13 22:33:35,448 - INFO - ==================================================
-2026-07-13 22:33:35,449 - INFO - Balance Inicial Ficticio: $1000.00
-2026-07-13 22:33:35,449 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
-2026-07-13 22:33:40,461 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
-2026-07-13 23:33:40,659 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
-2026-07-14 00:33:41,143 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
-2026-07-14 01:33:41,193 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
-2026-07-14 08:18:01,500 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
-2026-07-15 00:25:35,234 - INFO - Base de datos SQLite inicializada correctamente.
-2026-07-15 00:25:35,235 - INFO - ==================================================
-2026-07-15 00:25:35,235 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
-2026-07-15 00:25:35,235 - INFO - MODO: [TESTNET] BALANCE REAL
-2026-07-15 00:25:35,236 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-2026-07-15 00:25:35,236 - INFO - ==================================================
-2026-07-15 00:25:38,661 - ERROR - Error obteniendo balance de Testnet: binance testnet/sandbox mode is not supported for futures anymore, please check the deprecation announcement https://t.me/ccxt_announcements/92 and consider using the demo trading instead.
-2026-07-15 00:25:38,662 - INFO - Balance Inicial: $1000.00
-2026-07-15 00:25:38,673 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
-2026-07-15 00:25:43,679 - INFO - --- [UTC 00:00] INICIANDO OPTIMIZACION DIARIA WFO ---
-2026-07-15 00:25:43,679 - INFO - Ejecutando Optimizador WFO para BTC/USDT (Ultimos 3 dias)...
-2026-07-15 00:25:44,674 - INFO - Ejecutando Optimizador WFO para ETH/USDT (Ultimos 3 dias)...
-2026-07-15 00:25:45,531 - INFO - Ejecutando Optimizador WFO para SOL/USDT (Ultimos 3 dias)...
-2026-07-15 00:25:46,599 - INFO - --- OPTIMIZACION COMPLETADA ---
-2026-07-15 00:25:46,599 - INFO - --- [HEARTBEAT] Bot activo y monitoreando el mercado (WebSockets OK) ---
-2026-07-15 00:29:33,711 - INFO - Base de datos SQLite inicializada correctamente.
-2026-07-15 00:29:33,712 - INFO - ==================================================
-2026-07-15 00:29:33,712 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
-2026-07-15 00:29:33,713 - INFO - MODO: [TESTNET] BALANCE REAL
-2026-07-15 00:29:33,713 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-2026-07-15 00:29:33,713 - INFO - ==================================================
-2026-07-15 00:29:36,985 - ERROR - Error obteniendo balance de Testnet: binance testnet/sandbox mode is not supported for futures anymore, please check the deprecation announcement https://t.me/ccxt_announcements/92 and consider using the demo trading instead.
-2026-07-15 00:29:36,986 - INFO - Balance Inicial: $1000.00
-2026-07-15 00:29:36,999 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
-2026-07-15 00:31:14,299 - INFO - Base de datos SQLite inicializada correctamente.
-2026-07-15 00:31:14,301 - INFO - ==================================================
-2026-07-15 00:31:14,302 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
-2026-07-15 00:31:14,302 - INFO - MODO: [TESTNET] BALANCE REAL
-2026-07-15 00:31:14,302 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-2026-07-15 00:31:14,303 - INFO - ==================================================
-2026-07-15 00:31:27,120 - INFO - Balance sincronizado con Testnet: $5000.00 USDT
-2026-07-15 00:31:27,121 - INFO - Balance Inicial: $5000.00
-2026-07-15 00:31:27,152 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
-2026-07-15 00:32:21,222 - INFO - Base de datos SQLite inicializada correctamente.
-2026-07-15 00:32:21,223 - INFO - ==================================================
-2026-07-15 00:32:21,224 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
-2026-07-15 00:32:21,228 - INFO - MODO: [TESTNET] BALANCE REAL
-2026-07-15 00:32:21,228 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-2026-07-15 00:32:21,229 - INFO - ==================================================
-2026-07-15 00:32:29,058 - INFO - Balance sincronizado con Testnet: $5000.00 USDT
-2026-07-15 00:32:29,059 - INFO - Balance Inicial: $5000.00
-2026-07-15 00:32:29,074 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
-2026-07-15 00:49:27,737 - INFO - Base de datos SQLite inicializada correctamente.
-2026-07-15 00:49:27,738 - INFO - ==================================================
-2026-07-15 00:49:27,739 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
-2026-07-15 00:49:27,739 - INFO - MODO: [CCXT LIVE EXECUTION] -> TESTNET: True
-2026-07-15 00:49:27,739 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-2026-07-15 00:49:27,739 - INFO - ==================================================
-2026-07-15 00:50:00,075 - INFO - Base de datos SQLite inicializada correctamente.
-2026-07-15 00:50:00,077 - INFO - ==================================================
-2026-07-15 00:50:00,078 - INFO - [LIVE] INICIANDO BOT DE PRODUCCION (GRID BIDIRECCIONAL - WEBSOCKETS)
-2026-07-15 00:50:00,078 - INFO - MODO: [CCXT LIVE EXECUTION] -> TESTNET: True
-2026-07-15 00:50:00,079 - INFO - MONEDAS: ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
-2026-07-15 00:50:00,079 - INFO - ==================================================
-2026-07-15 00:50:06,969 - INFO - Balance sincronizado con el Exchange: $5000.00 USDT
-2026-07-15 00:50:06,970 - INFO - Balance Inicial: $5000.00
-2026-07-15 00:50:06,996 - INFO - Esperando 5 segundos para popular los buffers del WebSocket...
+2026-07-17 08:20:51,672 - bot_main - INFO - [SOL/USDT] Precio WS: 74.505 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:52,180 - bot_main - INFO - [BTC/USDT] Precio WS: 63263.850000000006 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:52,180 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.045 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:52,180 - bot_main - INFO - [SOL/USDT] Precio WS: 74.505 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:52,689 - bot_main - INFO - [BTC/USDT] Precio WS: 63263.850000000006 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:52,689 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.045 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:52,689 - bot_main - INFO - [SOL/USDT] Precio WS: 74.505 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:53,193 - bot_main - INFO - [BTC/USDT] Precio WS: 63271.649999999994 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:53,194 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.335 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:53,194 - bot_main - INFO - [SOL/USDT] Precio WS: 74.505 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:53,695 - bot_main - INFO - [BTC/USDT] Precio WS: 63271.649999999994 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:53,695 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.2350000000001 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:53,695 - bot_main - INFO - [SOL/USDT] Precio WS: 74.505 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:54,202 - bot_main - INFO - [BTC/USDT] Precio WS: 63260.649999999994 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:54,202 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.045 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:54,202 - bot_main - INFO - [SOL/USDT] Precio WS: 74.505 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:54,707 - bot_main - INFO - [BTC/USDT] Precio WS: 63260.05 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:54,707 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.045 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:54,707 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:55,208 - bot_main - INFO - [BTC/USDT] Precio WS: 63257.649999999994 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:55,208 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.0149999999999 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:55,208 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:55,710 - bot_main - INFO - [BTC/USDT] Precio WS: 63257.649999999994 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:55,710 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.0149999999999 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:55,710 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:56,219 - bot_main - INFO - [BTC/USDT] Precio WS: 63260.350000000006 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:56,219 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.1550000000002 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:56,219 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:56,724 - bot_main - INFO - [BTC/USDT] Precio WS: 63256.95 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:56,724 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.0949999999998 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:56,724 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:57,227 - bot_main - INFO - [BTC/USDT] Precio WS: 63254.05 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:57,227 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.995 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:57,227 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:57,728 - bot_main - INFO - [BTC/USDT] Precio WS: 63254.05 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:57,728 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.995 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:57,728 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:58,229 - bot_main - INFO - [BTC/USDT] Precio WS: 63254.05 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:58,229 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.995 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:58,229 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:58,734 - bot_main - INFO - [BTC/USDT] Precio WS: 63251.350000000006 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:58,734 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.995 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:58,734 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:59,234 - bot_main - INFO - [BTC/USDT] Precio WS: 63257.25 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:59,234 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.1950000000002 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:59,234 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:20:59,738 - bot_main - INFO - [BTC/USDT] Precio WS: 63257.25 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:20:59,738 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.1950000000002 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:20:59,738 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:21:00,241 - bot_main - INFO - [BTC/USDT] Precio WS: 63255.05 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:21:00,242 - bot_main - INFO - [ETH/USDT] Precio WS: 1826.1950000000002 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:21:00,242 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:21:00,742 - bot_main - INFO - [BTC/USDT] Precio WS: 63255.05 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:21:00,742 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.9050000000002 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:21:00,742 - bot_main - INFO - [SOL/USDT] Precio WS: 74.495 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:21:01,243 - bot_main - INFO - [BTC/USDT] Precio WS: 63249.55 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:21:01,243 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.725 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:21:01,243 - bot_main - INFO - [SOL/USDT] Precio WS: 74.485 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:21:01,750 - bot_main - INFO - [BTC/USDT] Precio WS: 63249.55 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:21:01,750 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.725 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:21:01,750 - bot_main - INFO - [SOL/USDT] Precio WS: 74.485 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:21:02,252 - bot_main - INFO - [BTC/USDT] Precio WS: 63243.95 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:21:02,252 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.505 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:21:02,253 - bot_main - INFO - [SOL/USDT] Precio WS: 74.475 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:21:02,760 - bot_main - INFO - [BTC/USDT] Precio WS: 63243.95 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:21:02,760 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.505 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:21:02,760 - bot_main - INFO - [SOL/USDT] Precio WS: 74.475 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:21:03,261 - bot_main - INFO - [BTC/USDT] Precio WS: 63249.25 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:21:03,261 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.7150000000001 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:21:03,261 - bot_main - INFO - [SOL/USDT] Precio WS: 74.475 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:21:03,762 - bot_main - INFO - [BTC/USDT] Precio WS: 63244.350000000006 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:21:03,762 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.545 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:21:03,762 - bot_main - INFO - [SOL/USDT] Precio WS: 74.475 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:21:04,264 - bot_main - INFO - [BTC/USDT] Precio WS: 63244.350000000006 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:21:04,265 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.505 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:21:04,265 - bot_main - INFO - [SOL/USDT] Precio WS: 74.475 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39
+2026-07-17 08:21:04,766 - bot_main - INFO - [BTC/USDT] Precio WS: 63249.25 | Objetivo LONG: 63758.45 | Objetivo SHORT: 63905.22
+2026-07-17 08:21:04,766 - bot_main - INFO - [ETH/USDT] Precio WS: 1825.7150000000001 | Objetivo LONG: 1857.35 | Objetivo SHORT: 1865.88
+2026-07-17 08:21:04,766 - bot_main - INFO - [SOL/USDT] Precio WS: 74.475 | Objetivo LONG: 75.01 | Objetivo SHORT: 75.39

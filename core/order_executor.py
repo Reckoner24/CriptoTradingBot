@@ -42,7 +42,7 @@ class OrderExecutor:
             logger.info(f"[OrderExecutor] Abriendo {direction} en {symbol} | Cantidad: {amount} @ Market")
             order = self.exchange.create_market_order(symbol, side, amount)
             avg_price = order.get('average') or order.get('price') or price
-            logger.info(f"[OrderExecutor] ✅ Orden ejecutada: ID {order.get('id')} a precio {avg_price}")
+            logger.info(f"[OrderExecutor] Orden ejecutada: ID {order.get('id')} a precio {avg_price}")
             return {
                 'status': 'success',
                 'order_id': order.get('id'),
@@ -51,7 +51,7 @@ class OrderExecutor:
                 'size_usd': size_usd
             }
         except Exception as e:
-            logger.error(f"[OrderExecutor] ❌ Error abriendo posición en {symbol}: {e}")
+            logger.error(f"[OrderExecutor] Error abriendo posición en {symbol}: {e}")
             return {'status': 'error', 'message': str(e)}
 
     def close_position(self, symbol: str, direction: str, amount: float) -> dict:
@@ -63,12 +63,12 @@ class OrderExecutor:
             params = {'reduceOnly': True}
             order = self.exchange.create_market_order(symbol, side, amount, params=params)
             avg_price = order.get('average') or order.get('price')
-            logger.info(f"[OrderExecutor] ✅ Orden de cierre ejecutada: ID {order.get('id')}")
+            logger.info(f"[OrderExecutor] Orden de cierre ejecutada: ID {order.get('id')}")
             return {
                 'status': 'success',
                 'order_id': order.get('id'),
                 'close_price': avg_price
             }
         except Exception as e:
-            logger.error(f"[OrderExecutor] ❌ Error cerrando posición en {symbol}: {e}")
+            logger.error(f"[OrderExecutor] Error cerrando posicion en {symbol}: {e}")
             return {'status': 'error', 'message': str(e)}
