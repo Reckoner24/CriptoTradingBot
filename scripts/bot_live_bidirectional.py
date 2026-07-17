@@ -170,9 +170,15 @@ def simulate_grid(df, params):
             if (not long_active or salida_l is not None) and (not short_active or salida_s is not None): break
                 
         if long_active and salida_l is not None:
-            capital += (capital * params['risk_pct']) * ((salida_l - entry_long) / entry_long)
+            riesgo_real_pct = abs(entry_long - sl_long) / entry_long
+            pos_size = (capital * params['risk_pct']) / max(riesgo_real_pct, 0.001)
+            if pos_size > HARD_CAP_LIQUIDITY: pos_size = HARD_CAP_LIQUIDITY
+            capital += pos_size * ((salida_l - entry_long) / entry_long - 0.0008)
         if short_active and salida_s is not None:
-            capital += (capital * params['risk_pct']) * ((entry_short - salida_s) / entry_short)
+            riesgo_real_pct = abs(sl_short - entry_short) / entry_short
+            pos_size = (capital * params['risk_pct']) / max(riesgo_real_pct, 0.001)
+            if pos_size > HARD_CAP_LIQUIDITY: pos_size = HARD_CAP_LIQUIDITY
+            capital += pos_size * ((entry_short - salida_s) / entry_short - 0.0008)
             
         max_exit = max(i, exit_idx_l if long_active else i, exit_idx_s if short_active else i)
         i = max_exit if max_exit > i else i + 1
@@ -278,8 +284,8 @@ def run_wfo_daily(sym):
     
     best = study.best_params
     
-    # Calculate current targets based on latest candle
-    latest = df.iloc[-1]
+    # Calculate current targets based on last closed candle
+    latest = df.iloc[-2]
     c_atr = latest['ATR']
     c_close = latest['close']
     c_ema = latest['EMA20']
@@ -348,13 +354,18 @@ class LiveTrader:
         if sym in self.state['positions'] and direction in self.state['positions'][sym]:
             return # Already open
             
-        # Determinar probabilidad de éxito para balancear el riesgo (Kelly-lite)
-        win_rate = self.state.get('wfo_data', {}).get(sym, {}).get('metrics', {}).get('win_rate', 0.5)
-        # Escala dinámica: 50% Win Rate = 1x, 75% Win Rate = 1.5x, 25% Win Rate = 0.5x
-        dynamic_multiplier = max(0.5, min(2.0, win_rate / 0.5))
+        # Sizing por Volatilidad Exacta (Igual que el Backtester de 24h)
+        targets = self.state.get('wfo_data', {}).get(sym, {}).get('targets', {})
+        if not targets: return
         
-        free_margin_limit = self.state.get('free_balance', 0) * 0.70
-        ideal_size = self.state['balance'] * MAX_RISK * 5 * dynamic_multiplier
+        if direction == 'LONG':
+            riesgo_real_pct = abs(targets['long_entry'] - targets['long_sl']) / targets['long_entry']
+        else:
+            riesgo_real_pct = abs(targets['short_sl'] - targets['short_entry']) / targets['short_entry']
+            
+        ideal_size = (self.state['balance'] * MAX_RISK) / max(riesgo_real_pct, 0.001)
+        
+        free_margin_limit = self.state.get('free_balance', 0) * 0.90 * LEVERAGE
         pos_size_usd = min(ideal_size, HARD_CAP_LIQUIDITY, free_margin_limit)
         
         if pos_size_usd < 10:
@@ -419,6 +430,12 @@ class LiveTrader:
             # Debemos eliminarla localmente para no entrar en un bucle infinito.
             if 'ReduceOnly' in str(result.get('message', '')):
                 logger.warning(f"Posición {direction} en {sym} ya no existe en el Exchange. Limpiando estado local.")
+                
+                # FIJAR COOLDOWN AUNQUE FALLE PARA EVITAR CHURNING
+                if 'cooldowns' not in self.state:
+                    self.state['cooldowns'] = {}
+                self.state['cooldowns'][sym] = time.time() + 900
+                
                 del self.state['positions'][sym][direction]
                 if not self.state['positions'][sym]:
                     del self.state['positions'][sym]
@@ -527,6 +544,42 @@ async def live_loop():
                 trader.state['last_wfo_time'] = now_str
                 trader.save_state()
                 logger.info(f"--- OPTIMIZACION COMPLETADA ---")
+                
+            # 1.5 Chequear si necesitamos actualizar las trampas dinámicas (cada nueva vela de 15m)
+            current_15m_block = int(time.time() // 900)
+            if trader.state.get('last_15m_block') != current_15m_block:
+                logger.info(f"--- RECALCULANDO TRAMPAS DINAMICAS (NUEVA VELA 15M) ---")
+                for sym in SYMBOLS:
+                    if sym not in trader.state['wfo_data']: continue
+                    
+                    df = get_historical_data(sym, limit=50) # 50 velas son suficientes para EMA20 y ATR14
+                    if df.empty or len(df) < 2: continue
+                    
+                    latest = df.iloc[-2] # Usamos la vela cerrada anterior, no la actual fluctuante
+                    c_atr = latest['ATR']
+                    c_close = latest['close']
+                    c_ema = latest['EMA20']
+                    best = trader.state['wfo_data'][sym]['params']
+                    
+                    entry_l = c_close - (c_atr * best['grid_spacing_mult_l'])
+                    entry_s = c_close + (c_atr * best['grid_spacing_mult_s'])
+                    
+                    trader.state['wfo_data'][sym]['targets'] = {
+                        'long_entry': entry_l,
+                        'long_tp': entry_l + ((c_close - entry_l) * best['tp_mult_l']),
+                        'long_sl': entry_l - (c_atr * best['sl_mult_l']),
+                        'short_entry': entry_s,
+                        'short_tp': entry_s - ((entry_s - c_close) * best['tp_mult_s']),
+                        'short_sl': entry_s + (c_atr * best['sl_mult_s'])
+                    }
+                    trader.state['wfo_data'][sym]['indicators'] = {
+                        'atr': c_atr,
+                        'ema20': c_ema,
+                        'close': c_close,
+                        'timestamp': str(latest.name)
+                    }
+                trader.state['last_15m_block'] = current_15m_block
+                trader.save_state()
                 
             # 2. Obtener precios en tiempo real desde el WebSocket en lugar de REST
             # tickers = exchange.fetch_tickers(SYMBOLS)

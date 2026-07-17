@@ -2,7 +2,7 @@ module.exports = {
   apps: [
     {
       name: 'api-server',
-      script: 'C:\\Users\\mages\\OneDrive\\Documentos\\CriptoTradingBot\\.entorno\\Scripts\\pythonw.exe',
+      script: 'pythonw',
       args: '-m uvicorn api.server:app --host 127.0.0.1 --port 8000',
       interpreter: 'none',
       watch: false,
@@ -15,7 +15,7 @@ module.exports = {
     {
       name: 'trading-core',
       script: 'scripts/bot_live_bidirectional.py',
-      interpreter: 'C:\\Users\\mages\\OneDrive\\Documentos\\CriptoTradingBot\\.entorno\\Scripts\\pythonw.exe',
+      interpreter: 'pythonw',
       watch: false,
       autorestart: true,
       max_restarts: 10,
@@ -26,7 +26,7 @@ module.exports = {
     {
       name: 'telegram-bot',
       script: 'telegram_service.py',
-      interpreter: 'C:\\Users\\mages\\OneDrive\\Documentos\\CriptoTradingBot\\.entorno\\Scripts\\pythonw.exe',
+      interpreter: 'pythonw',
       watch: false,
       autorestart: true,
       max_restarts: 10,
@@ -35,4 +35,3 @@ module.exports = {
       }
     }
   ]
-};

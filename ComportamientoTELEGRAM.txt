@@ -1,0 +1,504 @@
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: ETH/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $1,853.5050
+🔸 Tamaño: $341.03 USDT
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: BTC/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $63,647.9500
+🔸 Tamaño: $159.94 USDT
+
+🔴 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: SHORT
+🔸 Entrada: $75.3950
+🔸 Tamaño: $159.99 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: SHORT
+🔹 Motivo: TAKE PROFIT
+🔹 Salida: $75.2850
+🔹 Rendimiento aprox: 💸 $+0.11 USDT
+
+💰 Nuevo Balance: $341.82
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: BTC/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $63,661.5500
+🔸 Tamaño: $160.00 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: BTC/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $63,640.0500
+🔹 Rendimiento aprox: 🩸 $-0.18 USDT
+
+💰 Nuevo Balance: $341.87
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: ETH/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $1,850.9550
+🔹 Rendimiento aprox: 🩸 $-0.74 USDT
+
+💰 Nuevo Balance: $340.83
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: ETH/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $1,851.0750
+🔸 Tamaño: $238.58 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: ETH/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $1,850.9150
+🔹 Rendimiento aprox: 🩸 $-0.21 USDT
+
+💰 Nuevo Balance: $340.62
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $75.0050
+🔸 Tamaño: $238.43 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: TAKE PROFIT
+🔹 Salida: $75.2450
+🔹 Rendimiento aprox: 💸 $+0.57 USDT
+
+💰 Nuevo Balance: $340.62
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: ETH/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $1,850.9950
+🔸 Tamaño: $238.43 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: ETH/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $1,850.8850
+🔹 Rendimiento aprox: 🩸 $-0.20 USDT
+
+💰 Nuevo Balance: $340.63
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $75.0050
+🔸 Tamaño: $238.44 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3150
+🔹 Rendimiento aprox: 🩸 $-2.38 USDT
+
+💰 Nuevo Balance: $339.11
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.3650
+🔸 Tamaño: $237.37 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3150
+🔹 Rendimiento aprox: 🩸 $-0.35 USDT
+
+💰 Nuevo Balance: $337.65
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.4550
+🔸 Tamaño: $236.35 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3350
+🔹 Rendimiento aprox: 🩸 $-0.57 USDT
+
+💰 Nuevo Balance: $337.13
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3350
+🔹 Rendimiento aprox: 🩸 $-0.22 USDT
+
+💰 Nuevo Balance: $336.91
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.3450
+🔸 Tamaño: $235.99 USDT
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.4850
+🔸 Tamaño: $235.84 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3250
+🔹 Rendimiento aprox: 🩸 $-0.70 USDT
+
+💰 Nuevo Balance: $336.35
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.3950
+🔸 Tamaño: $235.44 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3350
+🔹 Rendimiento aprox: 🩸 $-0.38 USDT
+
+💰 Nuevo Balance: $336.00
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.3450
+🔸 Tamaño: $235.20 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3250
+🔹 Rendimiento aprox: 🩸 $-0.25 USDT
+
+💰 Nuevo Balance: $335.78
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.5650
+🔸 Tamaño: $235.05 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3350
+🔹 Rendimiento aprox: 🩸 $-0.91 USDT
+
+💰 Nuevo Balance: $335.40
+
+🟢 NUEVA POSICIÓN REAL
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.3450
+🔸 Tamaño: $234.78 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3350
+🔹 Rendimiento aprox: 🩸 $-0.22 USDT
+
+💰 Nuevo Balance: $335.09
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.3450
+🔸 Tamaño: $234.56 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3350
+🔹 Rendimiento aprox: 🩸 $-0.22 USDT
+
+💰 Nuevo Balance: $334.47
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.4450
+🔸 Tamaño: $234.13 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $74.3350
+🔹 Rendimiento aprox: 🩸 $-0.53 USDT
+
+💰 Nuevo Balance: $334.19
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $74.7450
+🔸 Tamaño: $233.93 USDT
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: BTC/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $63,642.9500
+🔸 Tamaño: $233.93 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: BTC/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $63,635.0500
+🔹 Rendimiento aprox: 🩸 $-0.22 USDT
+
+💰 Nuevo Balance: $334.64
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: BTC/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $63,670.1500
+🔸 Tamaño: $179.62 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: BTC/USDT
+🔹 Dirección: LONG
+🔹 Motivo: TAKE PROFIT
+🔹 Salida: $63,797.6500
+🔹 Rendimiento aprox: 💸 $+0.22 USDT
+
+💰 Nuevo Balance: $334.95
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: TAKE PROFIT
+🔹 Salida: $75.2550
+🔹 Rendimiento aprox: 💸 $+1.41 USDT
+
+💰 Nuevo Balance: $334.82
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: ETH/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $1,851.8650
+🔸 Tamaño: $234.38 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: ETH/USDT
+🔹 Dirección: LONG
+🔹 Motivo: STOP LOSS
+🔹 Salida: $1,850.6750
+🔹 Rendimiento aprox: 🩸 $-0.34 USDT
+
+💰 Nuevo Balance: $334.73
+
+🔴 NUEVA POSICIÓN REAL
+
+🔸 Par: BTC/USDT
+🔸 Dirección: SHORT
+🔸 Entrada: $63,991.7500
+🔸 Tamaño: $234.31 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: BTC/USDT
+🔹 Dirección: SHORT
+🔹 Motivo: STOP LOSS
+🔹 Salida: $64,149.3000
+🔹 Rendimiento aprox: 🩸 $-0.76 USDT
+
+💰 Nuevo Balance: $334.22
+
+🔴 NUEVA POSICIÓN REAL
+
+🔸 Par: BTC/USDT
+🔸 Dirección: SHORT
+🔸 Entrada: $63,992.9500
+🔸 Tamaño: $233.95 USDT
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $75.0050
+🔸 Tamaño: $233.95 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: BTC/USDT
+🔹 Dirección: SHORT
+🔹 Motivo: STOP LOSS
+🔹 Salida: $64,144.9500
+🔹 Rendimiento aprox: 🩸 $-0.74 USDT
+
+💰 Nuevo Balance: $333.44
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: SOL/USDT
+🔹 Dirección: LONG
+🔹 Motivo: TAKE PROFIT
+🔹 Salida: $75.2450
+🔹 Rendimiento aprox: 💸 $+0.56 USDT
+
+💰 Nuevo Balance: $333.46
+
+🔴 NUEVA POSICIÓN REAL
+
+🔸 Par: BTC/USDT
+🔸 Dirección: SHORT
+🔸 Entrada: $64,141.2500
+🔸 Tamaño: $233.42 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: BTC/USDT
+🔹 Dirección: SHORT
+🔹 Motivo: STOP LOSS
+🔹 Salida: $64,146.3500
+🔹 Rendimiento aprox: 🩸 $-0.21 USDT
+
+💰 Nuevo Balance: $333.26
+
+🟢 NUEVA POSICIÓN REAL
+
+🔸 Par: SOL/USDT
+🔸 Dirección: LONG
+🔸 Entrada: $75.0050
+🔸 Tamaño: $233.28 USDT
+
+🔴 NUEVA POSICIÓN REAL
+
+🔸 Par: BTC/USDT
+🔸 Dirección: SHORT
+🔸 Entrada: $64,017.2500
+🔸 Tamaño: $233.28 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: BTC/USDT
+🔹 Dirección: SHORT
+🔹 Motivo: STOP LOSS
+🔹 Salida: $64,142.2500
+🔹 Rendimiento aprox: 🩸 $-0.64 USDT
+
+💰 Nuevo Balance: $332.79
+
+🔴 NUEVA POSICIÓN REAL
+
+🔸 Par: BTC/USDT
+🔸 Dirección: SHORT
+🔸 Entrada: $64,141.4500
+🔸 Tamaño: $178.41 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: BTC/USDT
+🔹 Dirección: SHORT
+🔹 Motivo: STOP LOSS
+🔹 Salida: $64,142.8500
+🔹 Rendimiento aprox: 🩸 $-0.15 USDT
+
+💰 Nuevo Balance: $332.80
+
+🔴 NUEVA POSICIÓN REAL
+
+🔸 Par: BTC/USDT
+🔸 Dirección: SHORT
+🔸 Entrada: $63,996.0500
+🔸 Tamaño: $178.41 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: BTC/USDT
+🔹 Dirección: SHORT
+🔹 Motivo: STOP LOSS
+🔹 Salida: $64,142.2500
+🔹 Rendimiento aprox: 🩸 $-0.55 USDT
+
+💰 Nuevo Balance: $332.01
+
+🔴 NUEVA POSICIÓN REAL
+🔸 Par: BTC/USDT
+🔸 Dirección: SHORT
+🔸 Entrada: $64,125.8500
+🔸 Tamaño: $177.88 USDT
+
+🏁 POSICIÓN REAL CERRADA
+
+🔹 Par: BTC/USDT
+🔹 Dirección: SHORT
+🔹 Motivo: STOP LOSS
+🔹 Salida: $64,149.8500
+🔹 Rendimiento aprox: 🩸 $-0.21 USDT
+
+💰 Nuevo Balance: $331.98
