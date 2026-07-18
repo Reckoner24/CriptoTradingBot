@@ -9,3 +9,7 @@ __pycache__/
 .claude*/
 # Archived scripts
 _archive/
+
+# Runtime live state and rotated logs (never version in git)
+paper_state.json*
+bot_live.log*

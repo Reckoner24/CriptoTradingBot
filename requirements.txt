@@ -1,48 +1,42 @@
-# Data & Exchange
-# ccxt==4.3.1
-# python-binance==1.0.19
-# websockets==12.0
-# aiohttp==3.9.3
+# Dependencias de producción (versiones pineadas al venv del proyecto)
 
-# # Backtesting
-# vectorbt==0.26.2
-# backtesting==0.3.3
+# Exchange / datos de mercado
+ccxt==4.5.65
+websockets==16.0
+aiohttp==3.14.1
 
-# Data Science
-pandas
-numpy
-scipy
-scikit-learn
+# Procesamiento y estrategia
+pandas==3.0.2
+numpy==2.2.6
+pandas-ta==0.4.71b0
+optuna==4.8.0
 
-# Machine Learning
-torch
-xgboost
-hmmlearn
-optuna
+# Persistencia y API de monitorización
+aiosqlite==0.22.1
+fastapi==0.139.0
+uvicorn==0.51.0
 
-# Indicadores Técnicos
-pandas-ta
-ta
+# Notificaciones y configuración
+python-telegram-bot==22.7
+python-dotenv==1.2.2
 
-# IA / LLMs
-anthropic
-groq
-google-genai
-
-# Observabilidad
-python-telegram-bot
-plotly
-rich
-
-# Infraestructura
-python-dotenv
-asyncio
-sqlalchemy
-aiosqlite
-fastapi
-uvicorn
+# Reportes / backtesting (gráficos)
+matplotlib==3.11.0
 
 # Testing
-pytest
-pytest-asyncio
-ccxt
+pytest==9.0.3
+pytest-asyncio==1.3.0
+
+# Research/legacy (no requerido en producción)
+# torch==2.11.0
+# xgboost==3.2.0
+# scikit-learn==1.8.0
+# hmmlearn==0.3.3
+# scipy==1.17.1
+# anthropic==0.94.1
+# groq==1.1.2
+# google-genai==1.73.0
+# plotly==6.7.0
+# rich==15.0.0
+# ta==0.11.0
+# SQLAlchemy==2.0.49

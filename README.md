@@ -46,9 +46,10 @@ A lightweight, asynchronous HTTP server built with FastAPI and Uvicorn.
 *   Provides RESTful endpoints allowing external services or custom dashboards to poll the system's operational health, current balance, and active positions without creating race conditions with the Core Engine.
 
 ### 3. Notification & Control Interface (`telegram_service.py`)
-A dedicated daemon for remote monitoring via Telegram.
-*   Continuously polls the FastAPI server for state changes.
-*   Emits push notifications for critical events, including order execution, PnL realization, and system errors.
+A dedicated daemon for remote monitoring and control via Telegram.
+*   Responds to admin commands: `/start`, `/status`, `/posiciones` and `/portafolio`, querying the FastAPI server on demand for state, open positions and portfolio balance.
+*   Runs a background **watchdog** that monitors the freshness of the trading-core state and alerts the admin if the core engine goes down or stops updating.
+*   Push alerts for order opens/closes and errors are **not** sent by this service; they are emitted directly by the trading-core engine (`scripts/bot_live_bidirectional.py`).
 *   Features a strict Role-Based Access Control (RBAC) mechanism bound to a specific environment-defined `TELEGRAM_ID` to prevent unauthorized access.
 
 ### 4. Persistence Layer (`data/trading_bot.db`)
@@ -66,8 +67,15 @@ Powered by AioSQLite, ensuring thread-safe, non-blocking disk I/O. Persists the 
 │   ├── order_executor.py          # CCXT integration and trade execution logic
 │   └── websocket_streamer.py      # Async WebSocket client for Binance streams
 ├── scripts/
-│   └── bot_live_bidirectional.py  # Main trading loop and strategy implementation
-├── telegram_service.py            # Telegram bot interface daemon
+│   ├── bot_live_bidirectional.py  # Main trading loop and strategy implementation
+│   ├── backtest_last_24h.py       # Backtest of the strategy over the last 24h
+│   └── generate_24h_report.py     # 24h performance report generator
+├── tests/
+│   ├── test_data_loader.py        # Unit tests for the exchange data loader (mocked)
+│   └── test_websocket_streamer.py # Unit tests for the bookTicker streamer & reconnect backoff
+├── telegram_service.py            # Telegram bot interface daemon (commands + watchdog)
+├── ecosystem.config.js            # PM2 process definitions (production deployment)
+├── run_bot_247.bat                # LEGACY launcher (deprecated, use PM2 instead)
 ├── requirements.txt               # Dependency lockfile
 ├── .env.example                   # Environment configuration template
 └── README.md
@@ -159,6 +167,25 @@ Start the services in the following order across separate terminal sessions:
     python scripts/bot_live_bidirectional.py
     ```
 
+### PM2 Deployment on Windows (Recommended)
+On Windows, the supported way to run the full stack is [PM2](https://pm2.keymetrics.io/), which keeps the three services alive, restarts them with exponential backoff and captures their logs.
+
+```bash
+npm install -g pm2
+pm2 start ecosystem.config.js
+pm2 save
+```
+
+This launches the three apps defined in `ecosystem.config.js` (`api-server`, `trading-core`, `telegram-bot`) with `cwd` pinned to the repository root, so relative paths work regardless of where PM2 is invoked from. Useful commands:
+
+```bash
+pm2 status            # overview of the three services
+pm2 logs trading-core # follow live logs
+pm2 restart all       # restart every service
+```
+
+> **Note:** `run_bot_247.bat` is a **legacy** launcher kept only for reference. Do not use it alongside PM2: the bot enforces a single-instance lock via socket, so a second start would simply fail and the `.bat` loop would retry forever.
+
 ### Systemd Deployment Example
 To ensure maximum uptime, you can configure systemd services for each component. Example for the API server (`/etc/systemd/system/tradingbot-api.service`):
 
@@ -182,7 +209,7 @@ WantedBy=multi-user.target
 
 The system features robust file-based logging utilizing Python's native `logging` module with `RotatingFileHandler`. 
 *   **Log Location:** `bot_live.log`
-*   **Rotation Policy:** Logs are capped at 5MB, maintaining a history of up to 3 backup files to prevent disk exhaustion on long-running instances.
+*   **Rotation Policy:** Logs are capped at 5MB per file, maintaining a history of up to 5 files (5MB × 5) with UTF-8 encoding to prevent disk exhaustion on long-running instances.
 *   **Verbosity:** Captures INFO level operational metrics and ERROR level stack traces for seamless debugging.
 
 ## Security Considerations
@@ -190,6 +217,14 @@ The system features robust file-based logging utilizing Python's native `logging
 *   **API Keys:** Ensure your Binance API keys are restricted strictly to Futures Trading and Reading. Never enable Withdrawal permissions.
 *   **Telegram Authorization:** The Telegram wrapper uses hardcoded environment validation. If a user attempts to interact with the bot whose Chat ID does not explicitly match the `TELEGRAM_ID` environment variable, the system silently drops the request and logs a security exception. This prevents malicious actors from extracting state data or issuing unauthorized commands.
 *   **Local API Bound:** The FastAPI server binds strictly to `127.0.0.1` by default, ensuring the endpoints cannot be queried remotely without establishing an SSH tunnel or a reverse proxy with proper authentication.
+
+## Diferencias conocidas backtest vs live
+
+Los resultados de los backtests (`scripts/backtest_last_24h.py`, `scripts/generate_24h_report.py`) no son directamente comparables con el trading en vivo por estas diferencias conocidas:
+
+*   **Fills a mercado vs límite exacto:** en live las órdenes se ejecutan a mercado (con el slippage real del order book), mientras que el simulador asume fills exactos al precio límite calculado.
+*   **Leverage 3x vs apalancamiento implícito del sim:** el bot en vivo opera con apalancamiento fijo 3x (`BOT_LEVERAGE`, default 3); el simulador usa un apalancamiento implícito derivado del tamaño de posición asumido, que no replica el margen real.
+*   **Fees aproximados:** el simulador aplica comisiones aproximadas de 0.08% round-trip; las comisiones reales de Binance Futures (maker/taker, BNB discounts, funding) pueden diferir.
 
 ## Disclaimer
 

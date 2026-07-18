@@ -1,14 +1,22 @@
+import asyncio
 import aiosqlite
 import json
 import logging
-import os
+from pathlib import Path
 
 logger = logging.getLogger('bot_logger')
-DB_PATH = "data/trading_bot.db"
+
+# Ruta anclada al raíz del repo (independiente del CWD desde el que se lance el proceso)
+DB_PATH = Path(__file__).resolve().parent.parent / 'data' / 'trading_bot.db'
+DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+
+# Lock a nivel de módulo para serializar escrituras concurrentes fire-and-forget
+# y evitar errores 'database is locked' de SQLite.
+_db_write_lock = asyncio.Lock()
 
 async def init_db():
-    os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    async with aiosqlite.connect(DB_PATH) as db:
+    DB_PATH.parent.mkdir(parents=True, exist_ok=True)
+    async with aiosqlite.connect(str(DB_PATH)) as db:
         await db.execute('''
             CREATE TABLE IF NOT EXISTS bot_state (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,30 +32,31 @@ async def init_db():
         logger.info("Base de datos SQLite inicializada correctamente.")
 
 async def update_bot_state(status: str, balance: float, free_balance: float, open_positions: dict, last_wfo_time: str):
-    try:
-        async with aiosqlite.connect(DB_PATH) as db:
-            pos_json = json.dumps(open_positions)
-            # Primero checamos si existe la fila 1
-            async with db.execute('SELECT 1 FROM bot_state WHERE id = 1') as cursor:
-                row = await cursor.fetchone()
-                if row:
-                    await db.execute('''
-                        UPDATE bot_state 
-                        SET timestamp = CURRENT_TIMESTAMP, status = ?, balance = ?, free_balance = ?, open_positions = ?, last_wfo_time = ?
-                        WHERE id = 1
-                    ''', (status, balance, free_balance, pos_json, last_wfo_time))
-                else:
-                    await db.execute('''
-                        INSERT INTO bot_state (id, status, balance, free_balance, open_positions, last_wfo_time)
-                        VALUES (1, ?, ?, ?, ?, ?)
-                    ''', (status, balance, free_balance, pos_json, last_wfo_time))
-            await db.commit()
-    except Exception as e:
-        logger.error(f"Error actualizando la base de datos: {e}")
+    async with _db_write_lock:
+        try:
+            async with aiosqlite.connect(str(DB_PATH)) as db:
+                pos_json = json.dumps(open_positions)
+                # Primero checamos si existe la fila 1
+                async with db.execute('SELECT 1 FROM bot_state WHERE id = 1') as cursor:
+                    row = await cursor.fetchone()
+                    if row:
+                        await db.execute('''
+                            UPDATE bot_state
+                            SET timestamp = CURRENT_TIMESTAMP, status = ?, balance = ?, free_balance = ?, open_positions = ?, last_wfo_time = ?
+                            WHERE id = 1
+                        ''', (status, balance, free_balance, pos_json, last_wfo_time))
+                    else:
+                        await db.execute('''
+                            INSERT INTO bot_state (id, status, balance, free_balance, open_positions, last_wfo_time)
+                            VALUES (1, ?, ?, ?, ?, ?)
+                        ''', (status, balance, free_balance, pos_json, last_wfo_time))
+                await db.commit()
+        except Exception as e:
+            logger.error(f"Error actualizando la base de datos: {e}")
 
 async def get_latest_state():
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(str(DB_PATH)) as db:
             async with db.execute('SELECT timestamp, status, balance, free_balance, open_positions, last_wfo_time FROM bot_state ORDER BY id DESC LIMIT 1') as cursor:
                 row = await cursor.fetchone()
                 if row:
@@ -61,4 +70,6 @@ async def get_latest_state():
                     }
                 return None
     except Exception as e:
-        return {"error": str(e)}
+        # Tipo de retorno consistente: dict con el estado o None (nunca {'error': ...})
+        logger.error(f"Error leyendo el último estado de la base de datos: {e}")
+        return None
