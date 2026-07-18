@@ -387,6 +387,8 @@ class LiveTrader:
         
         self.state['positions'][sym][direction] = {
             'entry_price': real_entry,
+            'tp_price': targets['long_tp'] if direction == 'LONG' else targets['short_tp'],
+            'sl_price': targets['long_sl'] if direction == 'LONG' else targets['short_sl'],
             'size_usd': pos_size_usd,
             'amount': real_amount,
             'order_id': result['order_id'],
@@ -635,9 +637,9 @@ async def live_loop():
                             pos['candles_held'] += 1
                             trader.save_state()
                             
-                        if current_price >= targets['long_tp']:
+                        if current_price >= pos.get('tp_price', targets['long_tp']):
                             trader.close_position(sym, 'LONG', current_price, 'TAKE PROFIT')
-                        elif current_price <= targets['long_sl']:
+                        elif current_price <= pos.get('sl_price', targets['long_sl']):
                             trader.close_position(sym, 'LONG', current_price, 'STOP LOSS')
                         elif pos['candles_held'] >= 20 and current_price <= indicators['ema20']:
                             trader.close_position(sym, 'LONG', current_price, 'SMART TIMEOUT (EMA CONTRA)')
@@ -654,9 +656,9 @@ async def live_loop():
                             pos['candles_held'] += 1
                             trader.save_state()
                             
-                        if current_price <= targets['short_tp']:
+                        if current_price <= pos.get('tp_price', targets['short_tp']):
                             trader.close_position(sym, 'SHORT', current_price, 'TAKE PROFIT')
-                        elif current_price >= targets['short_sl']:
+                        elif current_price >= pos.get('sl_price', targets['short_sl']):
                             trader.close_position(sym, 'SHORT', current_price, 'STOP LOSS')
                         elif pos['candles_held'] >= 20 and current_price >= indicators['ema20']:
                             trader.close_position(sym, 'SHORT', current_price, 'SMART TIMEOUT (EMA CONTRA)')
