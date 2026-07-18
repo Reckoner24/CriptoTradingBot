@@ -41,7 +41,17 @@ class OrderExecutor:
         try:
             logger.info(f"[OrderExecutor] Abriendo {direction} en {symbol} | Cantidad: {amount} @ Market")
             order = self.exchange.create_market_order(symbol, side, amount)
-            avg_price = order.get('average') or order.get('price') or price
+            avg_price = order.get('average') or order.get('price')
+            if not avg_price and order.get('id'):
+                try:
+                    import time
+                    time.sleep(0.5) # Breve espera para asegurar que el exchange proceso el trade
+                    fetched = self.exchange.fetch_order(order.get('id'), symbol)
+                    avg_price = fetched.get('average') or fetched.get('price') or price
+                except Exception as ex:
+                    logger.warning(f"[OrderExecutor] No se pudo hacer fetch_order para {symbol}: {ex}")
+                    avg_price = price
+                    
             logger.info(f"[OrderExecutor] Orden ejecutada: ID {order.get('id')} a precio {avg_price}")
             return {
                 'status': 'success',
@@ -63,7 +73,16 @@ class OrderExecutor:
             params = {'reduceOnly': True}
             order = self.exchange.create_market_order(symbol, side, amount, params=params)
             avg_price = order.get('average') or order.get('price')
-            logger.info(f"[OrderExecutor] Orden de cierre ejecutada: ID {order.get('id')}")
+            if not avg_price and order.get('id'):
+                try:
+                    import time
+                    time.sleep(0.5)
+                    fetched = self.exchange.fetch_order(order.get('id'), symbol)
+                    avg_price = fetched.get('average') or fetched.get('price')
+                except Exception as ex:
+                    logger.warning(f"[OrderExecutor] No se pudo hacer fetch_order de cierre para {symbol}: {ex}")
+                    
+            logger.info(f"[OrderExecutor] Orden de cierre ejecutada: ID {order.get('id')} a precio {avg_price}")
             return {
                 'status': 'success',
                 'order_id': order.get('id'),
