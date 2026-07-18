@@ -1,17 +1,8 @@
 {
-    "balance": 335.78083423,
+    "balance": 329.97550278,
     "positions": {
         "BTC/USDT": {},
-        "SOL/USDT": {
-            "LONG": {
-                "entry_price": 74.565,
-                "size_usd": 235.04658396099998,
-                "amount": 3.15,
-                "order_id": "3249598218",
-                "open_time": 1784297707.3161492,
-                "candles_held": 0
-            }
-        },
+        "SOL/USDT": {},
         "ETH/USDT": {}
     },
     "history": [
@@ -1886,85 +1877,307 @@
             "pnl": -0.2514326745096464,
             "reason": "STOP LOSS",
             "time": 1784296806.5146291
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.565,
+            "exit": 74.33500000000001,
+            "pnl": -0.9130518760473301,
+            "reason": "STOP LOSS",
+            "time": 1784298714.214435
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.345,
+            "exit": 74.33500000000001,
+            "pnl": -0.21940622788559686,
+            "reason": "STOP LOSS",
+            "time": 1784299660.3911707
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.345,
+            "exit": 74.33500000000001,
+            "pnl": -0.21920135576343777,
+            "reason": "STOP LOSS",
+            "time": 1784302234.9610572
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.445,
+            "exit": 74.33500000000001,
+            "pnl": -0.5332562008064885,
+            "reason": "STOP LOSS",
+            "time": 1784303194.5814843
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63642.95,
+            "exit": 63635.05,
+            "pnl": -0.21618525783207423,
+            "reason": "STOP LOSS",
+            "time": 1784307085.1220443
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63670.149999999994,
+            "exit": 63797.649999999994,
+            "pnl": 0.21599725276394632,
+            "reason": "TAKE PROFIT",
+            "time": 1784308081.8789322
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 74.745,
+            "exit": 75.255,
+            "pnl": 1.409029885807899,
+            "reason": "TAKE PROFIT",
+            "time": 1784308082.7434003
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "LONG",
+            "entry": 1851.8649999999998,
+            "exit": 1850.6750000000002,
+            "pnl": -0.33811038489234063,
+            "reason": "STOP LOSS",
+            "time": 1784308346.1007762
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 63991.75,
+            "exit": 64149.3,
+            "pnl": -0.7643316284666867,
+            "reason": "STOP LOSS",
+            "time": 1784310461.7243264
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 63992.95,
+            "exit": 64144.95,
+            "pnl": -0.7428575362181987,
+            "reason": "STOP LOSS",
+            "time": 1784313917.1485689
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.005,
+            "exit": 75.245,
+            "pnl": 0.5614339282121351,
+            "reason": "TAKE PROFIT",
+            "time": 1784314049.9093132
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 64141.25,
+            "exit": 64146.350000000006,
+            "pnl": -0.2052968552193445,
+            "reason": "STOP LOSS",
+            "time": 1784315212.7787592
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 64017.25,
+            "exit": 64142.25,
+            "pnl": -0.6421362995967527,
+            "reason": "STOP LOSS",
+            "time": 1784317313.6846552
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 64141.45,
+            "exit": 64142.850000000006,
+            "pnl": -0.14661948822030108,
+            "reason": "STOP LOSS",
+            "time": 1784318224.8738236
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 63996.05,
+            "exit": 64142.25,
+            "pnl": -0.5502948501626466,
+            "reason": "STOP LOSS",
+            "time": 1784321744.1099439
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 64125.850000000006,
+            "exit": 64149.850000000006,
+            "pnl": -0.20887611667212608,
+            "reason": "STOP LOSS",
+            "time": 1784322782.1567366
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 64141.45,
+            "exit": 63917.95,
+            "pnl": 0.4775193665231588,
+            "reason": "TAKE PROFIT",
+            "time": 1784332806.7232466
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "LONG",
+            "entry": 75.005,
+            "exit": 74.995,
+            "pnl": -0.2177293415462138,
+            "reason": "TAKE PROFIT",
+            "time": 1784332807.1087148
+        },
+        {
+            "sym": "ETH/USDT",
+            "dir": "SHORT",
+            "entry": 1843.2649999999999,
+            "exit": 1840.9050000000002,
+            "pnl": 0.11158597626200588,
+            "reason": "TAKE PROFIT",
+            "time": 1784334717.2710593
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 63990.95,
+            "exit": 63930.05,
+            "pnl": 0.035240411592014985,
+            "reason": "TAKE PROFIT",
+            "time": 1784334839.8911464
+        },
+        {
+            "sym": "SOL/USDT",
+            "dir": "SHORT",
+            "entry": 75.155,
+            "exit": 75.11500000000001,
+            "pnl": -0.06220426919641127,
+            "reason": "TAKE PROFIT",
+            "time": 1784334840.2740138
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "LONG",
+            "entry": 63900.05,
+            "exit": 63899.55,
+            "pnl": -0.7231241870840027,
+            "reason": "TAKE PROFIT",
+            "time": 1784336961.3744574
+        },
+        {
+            "sym": "BTC/USDT",
+            "dir": "SHORT",
+            "entry": 63954.75,
+            "exit": 63916.55,
+            "pnl": -0.1807481616819127,
+            "reason": "TAKE PROFIT",
+            "time": 1784339101.6869483
         }
     ],
-    "cooldowns": {},
+    "cooldowns": {
+        "BTC/USDT": 1784340001.4936292
+    },
     "wfo_data": {
         "BTC/USDT": {
             "params": {
-                "grid_spacing_mult_l": 0.5043277567375897,
-                "tp_mult_l": 0.7385975532641074,
-                "sl_mult_l": 1.1376314496330115,
-                "grid_spacing_mult_s": 0.9232176394156275,
-                "tp_mult_s": 0.7567605354215303,
-                "sl_mult_s": 2.3021178814287735
+                "grid_spacing_mult_l": 0.6715110778791598,
+                "tp_mult_l": 0.9944928956579067,
+                "sl_mult_l": 3.6389785237032832,
+                "grid_spacing_mult_s": 0.7424419135422679,
+                "tp_mult_s": 0.9422765573401222,
+                "sl_mult_s": 2.784615398627367
+            },
+            "metrics": {
+                "win_rate": 0.9928571428571429,
+                "total_trades": 140
             },
             "targets": {
-                "long_entry": 63758.44968670429,
-                "long_tp": 63796.74620124048,
-                "long_sl": 63641.488947798905,
-                "short_entry": 63905.216694955445,
-                "short_tp": 63833.38748606052,
-                "short_sl": 64141.89915353732
+                "long_entry": 63904.63550869427,
+                "long_tp": 63961.68408776085,
+                "long_sl": 63593.77220537545,
+                "short_entry": 64025.423827390776,
+                "short_tp": 63965.66104166366,
+                "short_sl": 64263.30232424127
             },
             "indicators": {
-                "atr": 102.81074678720822,
-                "ema20": 64046.0374567139,
-                "close": 63810.3,
-                "timestamp": "2026-07-16 23:45:00"
+                "atr": 85.42597910208762,
+                "ema20": 63925.66529480187,
+                "close": 63962.0,
+                "timestamp": "2026-07-18 01:15:00"
             }
         },
         "ETH/USDT": {
             "params": {
-                "grid_spacing_mult_l": 1.5144519708475552,
-                "tp_mult_l": 0.9400408713968673,
-                "sl_mult_l": 1.513983779769451,
-                "grid_spacing_mult_s": 0.5072822851309204,
-                "tp_mult_s": 0.9826920404732084,
-                "sl_mult_s": 3.2370878296466223
+                "grid_spacing_mult_l": 0.5677611466802756,
+                "tp_mult_l": 0.9864335119679765,
+                "sl_mult_l": 2.131872925295273,
+                "grid_spacing_mult_s": 0.5444840985621328,
+                "tp_mult_s": 0.9777935661359267,
+                "sl_mult_s": 3.496452354371683
+            },
+            "metrics": {
+                "win_rate": 0.9825581395348837,
+                "total_trades": 172
             },
             "targets": {
-                "long_entry": 1857.349840066769,
-                "long_tp": 1863.3568515787688,
-                "long_sl": 1850.961655644103,
-                "short_entry": 1865.8804541019992,
-                "short_tp": 1863.7770468929664,
-                "short_sl": 1879.5391962394476
+                "long_entry": 1840.470015783186,
+                "long_tp": 1842.4625959082978,
+                "long_sl": 1832.8852247376403,
+                "short_entry": 1844.4271689870511,
+                "short_tp": 1842.5330176149946,
+                "short_sl": 1856.8668693997492
             },
             "indicators": {
-                "atr": 4.219453674489717,
-                "ema20": 1870.7644798692822,
-                "close": 1863.74,
-                "timestamp": "2026-07-16 23:45:00"
+                "atr": 3.557806356818952,
+                "ema20": 1839.9304580528285,
+                "close": 1842.49,
+                "timestamp": "2026-07-18 01:15:00"
             }
         },
         "SOL/USDT": {
             "params": {
-                "grid_spacing_mult_l": 1.3191277937401575,
-                "tp_mult_l": 0.8597081477506924,
-                "sl_mult_l": 3.321584866904868,
-                "grid_spacing_mult_s": 0.5349659269243602,
-                "tp_mult_s": 0.9303097751573055,
-                "sl_mult_s": 1.8605786113241218
+                "grid_spacing_mult_l": 0.8775965683971766,
+                "tp_mult_l": 0.9833170002661041,
+                "sl_mult_l": 3.6583475341233918,
+                "grid_spacing_mult_s": 0.6520589990700589,
+                "tp_mult_s": 0.9925517736903338,
+                "sl_mult_s": 3.7616835264547452
+            },
+            "metrics": {
+                "win_rate": 1.0,
+                "total_trades": 118
             },
             "targets": {
-                "long_entry": 75.01161736655699,
-                "long_tp": 75.24234810324273,
-                "long_sl": 74.33582560626301,
-                "short_entry": 75.38884128509123,
-                "short_tp": 75.28758517363018,
-                "short_sl": 75.76738458453843
+                "long_entry": 75.0264166106256,
+                "long_tp": 75.15777142835061,
+                "long_sl": 74.4695611251829,
+                "short_entry": 75.25925318113644,
+                "short_tp": 75.16073926015505,
+                "short_sl": 75.83183795791535
             },
             "indicators": {
-                "atr": 0.2034546119918041,
-                "ema20": 75.59871758323922,
-                "close": 75.28,
-                "timestamp": "2026-07-16 23:45:00"
+                "atr": 0.1522150315814989,
+                "ema20": 75.0189496208728,
+                "close": 75.16,
+                "timestamp": "2026-07-18 01:15:00"
             }
         }
     },
-    "last_wfo_time": "2026-07-17",
-    "last_heartbeat": 1784294659.0956938,
-    "free_balance": 335.78083423,
-    "last_db_update": 1784297701.9441152
+    "last_wfo_time": "2026-07-18",
+    "last_heartbeat": 1784337862.8098269,
+    "free_balance": 329.97550278,
+    "last_db_update": 1784339098.4801266,
+    "last_15m_block": 1982599
 }

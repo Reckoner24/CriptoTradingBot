@@ -519,6 +519,8 @@ async def live_loop():
     current_sleep = base_sleep
     max_sleep = 300 # 5 minutos maximo
     
+    last_ws_log = {} # Control de limite de logs cada 1 min por moneda
+    
     while True:
         try:
             # 1. Chequear si necesitamos correr el WFO (cada 24h o al inicio)
@@ -614,8 +616,10 @@ async def live_loop():
                 targets = trader.state['wfo_data'][sym]['targets']
                 indicators = trader.state['wfo_data'][sym]['indicators']
                 
-                # Log de seguimiento del precio para monitoreo activo
-                logger.info(f"[{sym}] Precio WS: {current_price} | Objetivo LONG: {targets['long_entry']:.2f} | Objetivo SHORT: {targets['short_entry']:.2f}")
+                # Log de seguimiento del precio para monitoreo activo (limitado a 1 vez por minuto)
+                if sym not in last_ws_log or time.time() - last_ws_log[sym] >= 60:
+                    logger.info(f"[{sym}] Precio WS: {current_price} | Objetivo LONG: {targets['long_entry']:.2f} | Objetivo SHORT: {targets['short_entry']:.2f}")
+                    last_ws_log[sym] = time.time()
                 
                 # --- CHECK OPEN POSITIONS (SALIDAS) ---
                 if sym in trader.state['positions']:
