@@ -37,6 +37,9 @@ graph TD
 The main daemon responsible for market analysis and execution.
 *   **WebSockets Integration:** Maintains a persistent WebSocket connection to the exchange to consume real-time Tick/Kline data.
 *   **Bidirectional Grid Strategy:** Implements advanced grid methodologies capable of capturing both long and short market movements concurrently.
+*   **Execution Modes:** Selectable via the `EXECUTION_MODE` environment variable — `paper` (default, simulated fills on public mainnet data) or `testnet` (real demo orders on Binance Testnet). See [Execution Modes](#execution-modes).
+*   **Margin Caps:** Margin per trade is capped at 35% of the current balance (`MAX_MARGIN_PER_TRADE_PCT = 0.35`) and total margin across all open positions is capped at 80% (`MAX_TOTAL_MARGIN_PCT = 0.80`), bounding aggregate exposure regardless of WFO risk output.
+*   **Anti-Churn Re-entry:** After a position is closed, the bot does not re-enter the same (symbol, direction) until the next 15m candle opens, preventing immediate re-entry churn on the same grid level.
 *   **Dynamic Optimization (WFO):** Periodically runs Walk-Forward Optimization algorithms via `optuna` and `pandas-ta` to dynamically recalibrate take-profit, stop-loss, and grid spacing parameters based on recent market volatility.
 *   **CCXT Execution Module:** Interfaces directly with Binance Testnet/Mainnet via `core/order_executor.py` to dispatch precision Market Orders, handling automatic leverage configuration and Reduce-Only parameters to mitigate execution risk.
 
@@ -72,7 +75,8 @@ Powered by AioSQLite, ensuring thread-safe, non-blocking disk I/O. Persists the 
 │   └── generate_24h_report.py     # 24h performance report generator
 ├── tests/
 │   ├── test_data_loader.py        # Unit tests for the exchange data loader (mocked)
-│   └── test_websocket_streamer.py # Unit tests for the bookTicker streamer & reconnect backoff
+│   ├── test_websocket_streamer.py # Unit tests for the bookTicker streamer & reconnect backoff
+│   └── test_paper_mode.py         # Unit tests for paper-mode executor logic (PnL, defaults, margin caps)
 ├── telegram_service.py            # Telegram bot interface daemon (commands + watchdog)
 ├── ecosystem.config.js            # PM2 process definitions (production deployment)
 ├── run_bot_247.bat                # LEGACY launcher (deprecated, use PM2 instead)
@@ -91,7 +95,7 @@ Returns the current operational state of the trading bot.
 **Response:**
 ```json
 {
-  "status": "running",
+  "status": "running (PAPER)",
   "balance": 5000.0,
   "positions": {
     "BTC/USDT": {
@@ -111,7 +115,7 @@ Returns the current operational state of the trading bot.
 
 *   Python 3.10 or higher.
 *   A stable internet connection capable of maintaining WebSocket streams.
-*   Valid Binance API credentials (with Futures trading enabled).
+*   Valid Binance Testnet API credentials — only required when running with `EXECUTION_MODE=testnet` (PAPER mode needs no keys).
 *   A Telegram Bot Token (obtained via BotFather).
 
 ## Installation and Setup
@@ -136,7 +140,10 @@ Returns the current operational state of the trading bot.
 4.  **Environment Configuration:**
     Create a `.env` file in the root directory. The system strictly reads from this file to ensure credentials are never hardcoded or pushed to version control.
     ```env
-    # Exchange Credentials
+    # Execution Mode: paper (default, no keys needed) or testnet
+    EXECUTION_MODE=paper
+
+    # Exchange Credentials (only required for EXECUTION_MODE=testnet)
     BINANCE_TESTNET_KEY=your_api_key_here
     BINANCE_TESTNET_SECRET=your_api_secret_here
 
@@ -144,6 +151,23 @@ Returns the current operational state of the trading bot.
     TELEGRAM_BOT_API=your_telegram_bot_token
     TELEGRAM_ID=your_personal_chat_id
     ```
+
+## Execution Modes
+
+The trading core supports two execution modes, selected via the `EXECUTION_MODE` environment variable (default: `paper`). Real mainnet trading with actual funds is **not supported yet**.
+
+| | `paper` (default) | `testnet` |
+|---|---|---|
+| **Data source** | Public mainnet data (OHLCV + WebSocket) | Binance Testnet (consistent venue: testnet WS) |
+| **Fills** | Simulated at current price (mid) | Real demo orders on Binance Testnet |
+| **API keys required** | None | `BINANCE_TESTNET_KEY` / `BINANCE_TESTNET_SECRET` |
+| **Balance & accounting** | Local state, 0.08% round-trip fee | Testnet account balance |
+| **When to use it** | Validation against the 24h live backtest (exact replica of its environment) | Exchange integration testing (order signing, reduce-only, leverage) |
+
+*   **PAPER mode** is an exact replica of the 24h live backtest environment (`scripts/backtest_last_24h.py`): it consumes public mainnet market data, simulates fills at the current price and keeps all accounting locally (balance from local state, 0.08% round-trip fee). No Binance API keys are required, since no order ever reaches the exchange. Use it to verify that live behavior matches the backtest before involving any exchange venue.
+*   **TESTNET mode** executes real demo orders against Binance Testnet, keeping the venue consistent (testnet WebSocket for market data). Use it to validate the full exchange integration — order dispatch, reduce-only handling, leverage configuration — without risking capital.
+
+Telegram notifications and the status persisted for the API reflect the active mode: `NUEVA POSICIÓN (PAPER)` / `POSICIÓN CERRADA (PAPER)` messages, and a `running (PAPER)` or `running (TESTNET)` status field.
 
 ## Execution Workflow (Production Deployment)
 
@@ -218,13 +242,13 @@ The system features robust file-based logging utilizing Python's native `logging
 *   **Telegram Authorization:** The Telegram wrapper uses hardcoded environment validation. If a user attempts to interact with the bot whose Chat ID does not explicitly match the `TELEGRAM_ID` environment variable, the system silently drops the request and logs a security exception. This prevents malicious actors from extracting state data or issuing unauthorized commands.
 *   **Local API Bound:** The FastAPI server binds strictly to `127.0.0.1` by default, ensuring the endpoints cannot be queried remotely without establishing an SSH tunnel or a reverse proxy with proper authentication.
 
-## Diferencias conocidas backtest vs live
+## Diferencias conocidas backtest vs live (modo paper)
 
-Los resultados de los backtests (`scripts/backtest_last_24h.py`, `scripts/generate_24h_report.py`) no son directamente comparables con el trading en vivo por estas diferencias conocidas:
+Los resultados de los backtests (`scripts/backtest_last_24h.py`, `scripts/generate_24h_report.py`) no son directamente comparables con el modo PAPER en vivo por estas diferencias conocidas:
 
-*   **Fills a mercado vs límite exacto:** en live las órdenes se ejecutan a mercado (con el slippage real del order book), mientras que el simulador asume fills exactos al precio límite calculado.
-*   **Leverage 3x vs apalancamiento implícito del sim:** el bot en vivo opera con apalancamiento fijo 3x (`BOT_LEVERAGE`, default 3); el simulador usa un apalancamiento implícito derivado del tamaño de posición asumido, que no replica el margen real.
-*   **Fees aproximados:** el simulador aplica comisiones aproximadas de 0.08% round-trip; las comisiones reales de Binance Futures (maker/taker, BNB discounts, funding) pueden diferir.
+*   **Fills simulados al mid vs límite exacto en el nivel:** en modo paper las órdenes se simulan al precio actual (mid) en el momento en que el mercado toca el nivel, mientras que el simulador asume fills exactos al precio límite calculado para ese nivel del grid.
+*   **Leverage 3x vs apalancamiento implícito del sim:** el bot opera con apalancamiento fijo 3x (`BOT_LEVERAGE`, default 3); el simulador usa un apalancamiento implícito derivado del tamaño de posición asumido, que no replica el margen real.
+*   **Fee 0.08% round-trip en ambos:** tanto el backtest como el modo paper aplican la misma comisión del 0.08% round-trip (`pnl_usdt = size * (pnl_pct - 0.0008)`), por lo que las comisiones ya no son una fuente de divergencia entre ambos entornos.
 
 ## Disclaimer
 
