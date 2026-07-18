@@ -394,6 +394,66 @@ class LiveTrader:
         self.executor = OrderExecutor(exchange, LEVERAGE)
         self.load_state()
         self.sync_balance()
+        self.sync_positions()
+
+    def sync_positions(self):
+        try:
+            positions = exchange.fetch_positions()
+            # En Binance ccxt standard, el symbol incluye el '/' y 'contracts' es el tamaño. 
+            # El original data esta en p['info']
+            active = {}
+            for p in positions:
+                info = p.get('info', {})
+                amt = float(info.get('positionAmt', 0))
+                if amt != 0:
+                    # El simbolo de ccxt viene como SOL/USDT:USDT (depende de config) o usamos el original
+                    sym = p['symbol'].split(':')[0] # Remover :USDT si existe
+                    direction = "LONG" if amt > 0 else "SHORT"
+                    active[(sym, direction)] = info
+            
+            # Limpiar posiciones cerradas
+            for sym in list(self.state['positions'].keys()):
+                for direction in list(self.state['positions'][sym].keys()):
+                    if (sym, direction) not in active:
+                        logger.warning(f"Posicion {direction} en {sym} ya no existe en Binance. Eliminando localmente.")
+                        del self.state['positions'][sym][direction]
+                if not self.state['positions'][sym]:
+                    del self.state['positions'][sym]
+                    
+            # Actualizar o agregar
+            for (sym, direction), info in active.items():
+                amt = abs(float(info['positionAmt']))
+                entry = float(info['entryPrice'])
+                upnl = float(info['unRealizedProfit'])
+                size_usd = amt * entry
+                
+                if sym not in self.state['positions']:
+                    self.state['positions'][sym] = {}
+                    
+                if direction in self.state['positions'][sym]:
+                    self.state['positions'][sym][direction]['amount'] = amt
+                    self.state['positions'][sym][direction]['entry_price'] = entry
+                    self.state['positions'][sym][direction]['unrealized_pnl'] = upnl
+                else:
+                    logger.warning(f"Posicion {direction} en {sym} encontrada en Binance, pero no localmente. Sincronizando...")
+                    self.state['positions'][sym][direction] = {
+                        'entry_price': entry,
+                        'size_usd': size_usd,
+                        'amount': amt,
+                        'order_id': 'SYNCED',
+                        'open_time': int(time.time()),
+                        'candles_held': 0,
+                        'current_price': entry,
+                        'unrealized_pnl': upnl
+                    }
+                    
+            logger.info(f"Posiciones sincronizadas: {len(active)} activas en el Exchange.")
+            self.save_state()
+            
+            # Forzar actualización en SQLite para la API/Telegram
+            asyncio.create_task(update_bot_state("running", self.state['balance'], self.state.get('free_balance', 0.0), self.state['positions'], self.state.get('last_wfo_time', "")))
+        except Exception as e:
+            logger.error(f"Error sincronizando posiciones desde el Exchange: {e}")
 
     def sync_balance(self):
         try:
@@ -538,6 +598,7 @@ class LiveTrader:
         )
         run_bg(send_telegram_alert(alerta))
 
+        self.sync_balance() # Sincronizar para asegurar que free_balance en DB se actualice instantaneamente
         self.save_state()
         run_bg(update_bot_state("running", self.state['balance'], self.state.get('free_balance', 0.0), self.state['positions'], self.state.get('last_wfo_time', "")))
 
@@ -592,6 +653,8 @@ class LiveTrader:
             'reason': reason,
             'time': time.time()
         })
+        
+        self.sync_balance() # Sincronizar para asegurar que free_balance en DB se actualice instantaneamente
         self.save_state()
 
         # 4) Refrescar SQLite para que /status refleje el cierre de inmediato

@@ -33,16 +33,39 @@ def _is_state_stale(state: dict) -> bool:
 async def root():
     return {"message": "Cripto Trading Bot API está en linea. Consulta /status para ver el estado actual."}
 
+import ccxt.async_support as ccxt
+from dotenv import load_dotenv
+load_dotenv()
+
 @app.get("/status")
 async def get_status():
     """
     Devuelve el último estado guardado por el bot en la base de datos SQLite.
-    Incluye 'stale': true si el estado tiene más de 60s sin actualizarse.
+    Adicionalmente, consulta Binance en tiempo real para obtener el balance exacto.
     """
     state = await get_latest_state()
     if state:
         if "error" in state:
             return {"status": "error", "message": state["error"]}
+
+        # Fetch live balance para exactitud milimetrica
+        try:
+            exchange = ccxt.binance({
+                'apiKey': os.getenv("BINANCE_API_KEY"),
+                'secret': os.getenv("BINANCE_API_SECRET"),
+                'enableRateLimit': False,
+                'options': {'defaultType': 'future'}
+            })
+            if os.getenv("USE_TESTNET", "True").lower() == "true":
+                exchange.set_sandbox_mode(True)
+                
+            balance = await exchange.fetch_balance()
+            if 'USDT' in balance:
+                state['balance'] = balance['USDT'].get('total', balance['USDT']['free'])
+                state['free_balance'] = balance['USDT']['free']
+            await exchange.close()
+        except Exception as e:
+            pass # Si falla (ej. rate limit), usamos el cache de SQLite
 
         # Campo nuevo: los consumidores pueden saber si el trading-core está vivo
         state["stale"] = _is_state_stale(state)

@@ -57,7 +57,7 @@ async def update_bot_state(status: str, balance: float, free_balance: float, ope
 async def get_latest_state():
     try:
         async with aiosqlite.connect(str(DB_PATH)) as db:
-            async with db.execute('SELECT timestamp, status, balance, free_balance, open_positions, last_wfo_time FROM bot_state ORDER BY id DESC LIMIT 1') as cursor:
+            async with db.execute('SELECT timestamp, status, balance, free_balance, open_positions, last_wfo_time FROM bot_state ORDER BY timestamp DESC LIMIT 1') as cursor:
                 row = await cursor.fetchone()
                 if row:
                     return {

@@ -259,7 +259,7 @@ async def portafolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
                 details += (
                     f"{icono} *{sym}* ({d_name})\n"
-                    f"   Inversión: `${size:,.2f}`\n"
+                    f"   Tamaño Apalancado (3x): `${size:,.2f}`\n"
                     f"   Entrada: `${entry:,.4f}`\n"
                     f"   Actual: `${current:,.4f}`\n"
                     f"   PnL: {pnl_icon} *${pnl:,.2f}*\n\n"
@@ -282,6 +282,14 @@ async def portafolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 # --- BUCLE PRINCIPAL ---
+async def post_init(application):
+    await application.bot.set_my_commands([
+        ("start", "Inicia el bot y verifica seguridad"),
+        ("status", "Muestra el estado general del bot"),
+        ("posiciones", "Muestra las posiciones abiertas actuales"),
+        ("portafolio", "Muestra el balance y pnl flotante")
+    ])
+
 def main():
     if not TELEGRAM_BOT_API:
         logger.error("No se encontró TELEGRAM_BOT_API en el archivo .env")
