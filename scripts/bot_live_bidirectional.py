@@ -995,10 +995,13 @@ async def live_loop():
 
     while True:
         try:
-            # 1. Chequear si necesitamos correr el WFO (cada 24h o al inicio)
-            now_str = datetime.now(timezone.utc).strftime('%Y-%m-%d')
-            if trader.state['last_wfo_time'] != now_str:
-                logger.info(f"--- [UTC 00:00] INICIANDO OPTIMIZACION DIARIA WFO ---")
+            # 1. Chequear si necesitamos correr el WFO: al inicio y en CADA vela
+            # nueva de 15m (reoptimizacion rolling sobre las ultimas 288 velas, para
+            # que los params nunca queden obsoletos durante el dia). Tarda ~6s y va
+            # en un hilo aparte: el WebSocket y las salidas no se bloquean.
+            current_15m_block = int(time.time() // 900)
+            if trader.state.get('last_wfo_block') != current_15m_block:
+                logger.info(f"--- [NUEVA VELA 15M] INICIANDO OPTIMIZACION WFO (rolling) ---")
 
                 # Función envolvente para correr en el executor
                 def run_all_wfo():
@@ -1015,12 +1018,13 @@ async def live_loop():
                 for sym, res in wfo_results.items():
                     trader.state['wfo_data'][sym] = res
 
-                trader.state['last_wfo_time'] = now_str
+                trader.state['last_wfo_block'] = current_15m_block
+                # last_wfo_time se mantiene solo como marca visible para Telegram/DB
+                trader.state['last_wfo_time'] = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M UTC')
                 trader.save_state()
                 logger.info(f"--- OPTIMIZACION COMPLETADA ---")
 
             # 1.5 Chequear si necesitamos actualizar las trampas dinámicas (cada nueva vela de 15m)
-            current_15m_block = int(time.time() // 900)
             if trader.state.get('last_15m_block') != current_15m_block:
                 logger.info(f"--- RECALCULANDO TRAMPAS DINAMICAS (NUEVA VELA 15M) ---")
                 for sym in SYMBOLS:

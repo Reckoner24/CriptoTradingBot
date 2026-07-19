@@ -6,11 +6,13 @@ import os
 import ccxt
 import warnings
 import matplotlib.pyplot as plt
+from pathlib import Path
 
 warnings.filterwarnings('ignore')
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
-ARTIFACT_DIR = r"C:\Users\Manu\.gemini\antigravity\brain\783f53a5-fa72-4405-a613-4b976ee52762"
+ARTIFACT_DIR = Path(__file__).resolve().parent.parent / 'reports'
+ARTIFACT_DIR.mkdir(parents=True, exist_ok=True)
 
 def fetch_data_24h(sym, timeframe='15m', limit=500):
     binance = ccxt.binance({'enableRateLimit': True, 'options': {'defaultType': 'future'}})

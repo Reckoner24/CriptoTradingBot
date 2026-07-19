@@ -40,7 +40,7 @@ The main daemon responsible for market analysis and execution.
 *   **Execution Modes:** Selectable via the `EXECUTION_MODE` environment variable — `paper` (default, simulated fills on public mainnet data) or `testnet` (real demo orders on Binance Testnet). See [Execution Modes](#execution-modes).
 *   **Margin Caps:** Margin per trade is capped at 35% of the current balance (`MAX_MARGIN_PER_TRADE_PCT = 0.35`) and total margin across all open positions is capped at 80% (`MAX_TOTAL_MARGIN_PCT = 0.80`), bounding aggregate exposure regardless of WFO risk output.
 *   **Anti-Churn Re-entry:** After a position is closed, the bot does not re-enter the same (symbol, direction) until the next 15m candle opens, preventing immediate re-entry churn on the same grid level.
-*   **Dynamic Optimization (WFO):** Periodically runs Walk-Forward Optimization algorithms via `optuna` and `pandas-ta` to dynamically recalibrate take-profit, stop-loss, and grid spacing parameters based on recent market volatility.
+*   **Dynamic Optimization (WFO):** Re-runs Walk-Forward Optimization via `optuna` (200 trials, `TPESampler(seed=42)`) and `pandas-ta` on every new 15m candle — a rolling re-optimization over the last 288 candles — to keep take-profit, stop-loss, and grid spacing parameters aligned with recent market volatility.
 *   **CCXT Execution Module:** Interfaces directly with Binance Testnet/Mainnet via `core/order_executor.py` to dispatch precision Market Orders, handling automatic leverage configuration and Reduce-Only parameters to mitigate execution risk.
 
 ### 2. Monitoring API Server (`api/server.py`)
@@ -107,7 +107,7 @@ Returns the current operational state of the trading bot.
       }
     }
   },
-  "last_wfo_time": "2026-07-15"
+  "last_wfo_time": "2026-07-19 08:45 UTC"
 }
 ```
 

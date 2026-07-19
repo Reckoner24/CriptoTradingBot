@@ -1,0 +1,142 @@
+{
+  "generado_utc": "2026-07-19T08:40:15.606154+00:00",
+  "resultados": {
+    "BTC/USDT": {
+      "ventana": [
+        "2026-07-18 08:45:00",
+        "2026-07-19 08:30:00"
+      ],
+      "reporte__params_reporte": {
+        "capital": 253.27839654091943,
+        "trades": 25
+      },
+      "reporte__params_live": {
+        "capital": 201.2815604990946,
+        "trades": 47
+      },
+      "live__params_live": {
+        "capital": 248.77952924181128,
+        "trades": 47
+      },
+      "live__params_reporte": {
+        "capital": 250.11546312540995,
+        "trades": 25
+      },
+      "live_sin_caps__params_live": {
+        "capital": 201.28156049909646,
+        "trades": 47
+      },
+      "params_reporte": {
+        "grid_spacing_mult_l": 0.7264812611581843,
+        "tp_mult_l": 0.8643843145115478,
+        "sl_mult_l": 2.1925313269024613,
+        "grid_spacing_mult_s": 2.013465546451971,
+        "tp_mult_s": 0.8817041850954903,
+        "sl_mult_s": 1.3607541370814795,
+        "risk_pct": 0.11312949605985789
+      },
+      "params_live": {
+        "grid_spacing_mult_l": 0.7886422525923278,
+        "tp_mult_l": 0.9915777444007196,
+        "sl_mult_l": 2.2478735249755357,
+        "grid_spacing_mult_s": 0.6166879374230737,
+        "tp_mult_s": 0.9725122966466454,
+        "sl_mult_s": 2.8148712980080046,
+        "risk_pct": 0.1979600576042665
+      }
+    },
+    "ETH/USDT": {
+      "ventana": [
+        "2026-07-18 08:45:00",
+        "2026-07-19 08:30:00"
+      ],
+      "reporte__params_reporte": {
+        "capital": 183.0954970454466,
+        "trades": 7
+      },
+      "reporte__params_live": {
+        "capital": 232.49274968638446,
+        "trades": 41
+      },
+      "live__params_live": {
+        "capital": 250.748992227925,
+        "trades": 41
+      },
+      "live__params_reporte": {
+        "capital": 248.2459703310566,
+        "trades": 7
+      },
+      "live_sin_caps__params_live": {
+        "capital": 232.49274968638503,
+        "trades": 41
+      },
+      "params_reporte": {
+        "grid_spacing_mult_l": 0.9797192487472266,
+        "tp_mult_l": 0.9442549967674205,
+        "sl_mult_l": 1.629081841244851,
+        "grid_spacing_mult_s": 2.4003954698467727,
+        "tp_mult_s": 0.7400955145818923,
+        "sl_mult_s": 1.2740877795313186,
+        "risk_pct": 0.1989288477550563
+      },
+      "params_live": {
+        "grid_spacing_mult_l": 0.84344380989129,
+        "tp_mult_l": 0.9751046173208726,
+        "sl_mult_l": 3.8387614361268128,
+        "grid_spacing_mult_s": 0.5816283482942635,
+        "tp_mult_s": 0.9637654667268125,
+        "sl_mult_s": 2.5032251111751997,
+        "risk_pct": 0.1707767578612695
+      }
+    },
+    "SOL/USDT": {
+      "ventana": [
+        "2026-07-18 08:45:00",
+        "2026-07-19 08:30:00"
+      ],
+      "reporte__params_reporte": {
+        "capital": 359.9065262900262,
+        "trades": 14
+      },
+      "reporte__params_live": {
+        "capital": 345.5312782512564,
+        "trades": 36
+      },
+      "live__params_live": {
+        "capital": 254.91091119681406,
+        "trades": 36
+      },
+      "live__params_reporte": {
+        "capital": 253.47116708839195,
+        "trades": 15
+      },
+      "live_sin_caps__params_live": {
+        "capital": 345.5312782512561,
+        "trades": 36
+      },
+      "params_reporte": {
+        "grid_spacing_mult_l": 1.0275488935440311,
+        "tp_mult_l": 0.973272561349148,
+        "sl_mult_l": 1.2985097660144707,
+        "grid_spacing_mult_s": 1.4203546028724943,
+        "tp_mult_s": 1.0068459871054918,
+        "sl_mult_s": 2.3221714407341953,
+        "risk_pct": 0.16073598397978545
+      },
+      "params_live": {
+        "grid_spacing_mult_l": 1.0061939414629435,
+        "tp_mult_l": 0.926046334323163,
+        "sl_mult_l": 3.4777655489599972,
+        "grid_spacing_mult_s": 0.6859712322747918,
+        "tp_mult_s": 0.9153998960337235,
+        "sl_mult_s": 3.696909382682575,
+        "risk_pct": 0.16605393817326264
+      }
+    }
+  },
+  "bot_real_24h": {
+    "n_trades": 59,
+    "pnl_total": -22.034981748479165,
+    "balance_actual": 296.19589106611505
+  }
+}
