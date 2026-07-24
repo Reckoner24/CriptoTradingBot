@@ -19,8 +19,101 @@ from dotenv import load_dotenv
 # Añadir directorio padre al sys.path para importar core
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from core.websocket_streamer import WebSocketStreamer
-from core.database import init_db, update_bot_state
+from core.database import init_db, update_bot_state, record_trade
 from core.order_executor import OrderExecutor
+from core.exit_manager import protective_exit
+from core.replay_engine import run_live_replay
+
+load_dotenv()
+TELEGRAM_BOT_API = os.getenv("TELEGRAM_BOT_API", "")
+TELEGRAM_ID = os.getenv("TELEGRAM_ID", "")
+
+import urllib.request
+import urllib.parse
+
+# --- RUTAS ANCLADAS AL DIRECTORIO RAIZ DEL PROYECTO ---
+# PM2 puede arrancar el proceso desde cualquier CWD; las rutas NO deben depender de el.
+PROJECT_ROOT = Path(__file__).resolve().parent.parent
+STATE_FILE = PROJECT_ROOT / 'paper_state.json'
+LOG_FILE = PROJECT_ROOT / 'bot_live.log'
+
+# --- CONFIGURACION DE LOGS ---
+log_formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+# Rotacion: 5 ficheros de 5 MB (~25 MB en total) para poder auditar mas de 24h de operacion.
+# encoding='utf-8' para que los acentos/emojis no salgan corruptos en el log.
+file_handler = RotatingFileHandler(LOG_FILE, mode='a', maxBytes=5_000_000, backupCount=5, encoding='utf-8', delay=0)
+file_handler.setFormatter(log_formatter)
+file_handler.setLevel(logging.INFO)
+
+console_handler = logging.StreamHandler()
+console_handler.setFormatter(log_formatter)
+console_handler.setLevel(logging.INFO)
+
+# Configurar ROOT logger para que tome logs de todos los modulos secundarios (ej. websocket_streamer)
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+root_logger.addHandler(file_handler)
+root_logger.addHandler(console_handler)
+
+logger = logging.getLogger('bot_main')
+
+warnings.filterwarnings('ignore')
+optuna.logging.set_verbosity(optuna.logging.WARNING)
+
+# --- TAREAS BACKGROUND ---
+# Patron estandar: mantener referencia fuerte a las tareas create_task para que
+# el GC no las mate antes de completarse (bug: la DB llevaba dias sin escribirse).
+background_tasks = set()
+
+def run_bg(coro):
+    """Programa una corrutina en segundo plano guardando una referencia fuerte."""
+    try:
+        loop = asyncio.get_running_loop()
+    except RuntimeError:
+        loop = None
+    if loop is None:
+        try:
+            coro.close()
+        except Exception:
+            pass
+        logger.warning("No hay loop de asyncio activo; tarea en segundo plano descartada.")
+        return None
+    t = loop.create_task(coro)
+    background_tasks.add(t)
+    t.add_done_callback(background_tasks.discard)
+    return t
+
+# --- FUNCION DE ALERTAS TELEGRAM ---
+async def send_telegram_alert(msg: str):
+    if not TELEGRAM_BOT_API or not TELEGRAM_ID:
+        logger.warning(f"Telegram no configurado (faltan credenciales); alerta NO enviada: {msg[:120]}")
+        return
+
+    def _send():
+        url = f"https://api.telegram.org/bot{TELEGRAM_BOT_API}/sendMessage"
+        data = json.dumps({"chat_id": TELEGRAM_ID, "text": msg, "parse_mode": "Markdown"}).encode('utf-8')
+        req = urllib.request.Request(url, data=data, headers={'Content-Type': 'application/json'})
+        with urllib.request.urlopen(req, timeout=10) as response:
+            response.read()
+
+    # Ejecutar en un hilo para no bloquear el loop de asyncio y evitar problemas de DNS en Windows.
+    # Reintenta 1 vez tras 2s y loguea cualquier fallo (antes los errores se tragaban silenciosamente).
+    loop = asyncio.get_running_loop()
+    for intento in (1, 2):
+        try:
+            await loop.run_in_executor(None, _send)
+            return
+        except Exception as e:
+            logger.error(f"Error enviando alerta por Telegram (intento {intento}/2): {e}")
+            if intento == 1:
+                await asyncio.sleep(2)
+    logger.error(f"ALERTA TELEGRAM NO ENVIADA tras 2 intentos. Contenido: {msg}")
+
+# --- MODO DE EJECUCION ---
+# EXECUTION_MODE (variable de entorno, default 'paper'):
+#   - 'paper'  : RECOMENDADO para paridad con scripts/backtest_last_24h.py.
+#                Datos = Binance futures MAINNET PUBLICO (OHLCV REST + WebSocket mainnet,
+#                exactamente el mismo venue de datos que el backtest) y SIN ordenes reales:
 
 load_dotenv()
 TELEGRAM_BOT_API = os.getenv("TELEGRAM_BOT_API", "")
@@ -134,17 +227,69 @@ STATUS_RUNNING = f"running ({MODE_LABEL})"
 
 SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
 TIMEFRAME = '15m'
-MAX_RISK = 0.20 # Fallback de riesgo por trade si aun no hay WFO (el WFO optimiza risk_pct en [0.10, 0.20])
+MAX_RISK = 0.05 # Fallback de riesgo por trade si aun no hay WFO (el WFO optimiza risk_pct en [0.05, 0.12]; ver RISK_PCT_MIN/MAX)
 HARD_CAP_LIQUIDITY = 10000.0
-LEVERAGE = int(os.getenv("BOT_LEVERAGE", "3")) # Sobre-escribible por variable de entorno BOT_LEVERAGE
+LEVERAGE = int(os.getenv("BOT_LEVERAGE", "10")) # Sobre-escribible por variable de entorno BOT_LEVERAGE
 
 # --- CAPS DE MARGEN (anti 'Libre: $2.01') ---
 # Fracciones del BALANCE comprometidas como margen (margen = nocional / LEVERAGE):
 #   - MAX_MARGIN_PER_TRADE_PCT: margen maximo por trade individual.
 #   - MAX_TOTAL_MARGIN_PCT: margen total maximo agregado de todas las posiciones abiertas.
-# Garantizan que siempre quede >= 20% del balance libre como colchon.
-MAX_MARGIN_PER_TRADE_PCT = 0.35
-MAX_TOTAL_MARGIN_PCT = 0.80
+# Garantizan que siempre quede >= 15% del balance libre como colchon.
+MAX_MARGIN_PER_TRADE_PCT = float(os.getenv("MAX_MARGIN_PER_TRADE_PCT", "0.85"))
+MAX_TOTAL_MARGIN_PCT = float(os.getenv("MAX_TOTAL_MARGIN_PCT", "0.90"))
+
+# --- FILTRO ANTI-FEES ---
+FEE_ROUND_TRIP = 0.0008
+MIN_TP_DISTANCE_PCT = 3 * FEE_ROUND_TRIP
+
+# --- GOBERNADOR DE RIESGO DINAMICO ---
+# Kelly con las stats reales del bot da f* <= 0: el "leverage dinamico" solo se usa
+# como FRENO sobre risk_pct (x0.5 expectancy negativa, x0.25 sangrado >= 5% del
+# balance en la ventana), nunca como acelerador.
+RISK_GOVERNOR_WINDOW = 30
+RISK_GOVERNOR_MIN_TRADES = 15
+RISK_GOVERNOR_HALT_PNL_PCT = -0.05
+# Tercer nivel del gobernador: si la ventana acumula perdida >= 8% del balance,
+# pausa completa de entradas (x0.0). Evita que dias catastroficos se acumulen.
+RISK_GOVERNOR_HALT2_PNL_PCT = float(os.getenv("RISK_GOVERNOR_HALT2_PNL_PCT", "-0.08"))
+
+# --- CONTROLES DE RIESGO DIARIO ---
+# Techo de perdida diaria: al -3% desde el capital de inicio del dia UTC no se
+# abren mas entradas hasta el dia siguiente (las salidas SIEMPRE siguen activas).
+# Al -1.5% el tamano se reduce a la mitad. Todo sobre-escribible por entorno.
+RISK_CONTROLS_ENABLED = os.getenv("RISK_CONTROLS_ENABLED", "true").lower() == "true"
+KILL_SWITCH_ENABLED = os.getenv("KILL_SWITCH_ENABLED", "true").lower() == "true"
+DAILY_DRAWDOWN_REDUCE_PCT = float(os.getenv("DAILY_DRAWDOWN_REDUCE_PCT", "0.015"))
+DAILY_DRAWDOWN_HALT_PCT = float(os.getenv("DAILY_DRAWDOWN_HALT_PCT", "0.03"))
+LOSS_STREAK_REDUCE_AT = int(os.getenv("LOSS_STREAK_REDUCE_AT", "3"))
+RISK_REDUCED_MULTIPLIER = float(os.getenv("RISK_REDUCED_MULTIPLIER", "0.50"))
+# Freno por racha de un lado concreto: tras N perdidas seguidas en un
+# (simbolo, direccion) se pausan las entradas de ese lado hasta que el WFO
+# acepte params nuevos (deja de sangrar el lado que el mercado castiga).
+SIDE_LOSS_STREAK_BLOCK_AT = int(os.getenv("SIDE_LOSS_STREAK_BLOCK_AT", "4"))
+MAX_ADX_FOR_GRID = float(os.getenv("MAX_ADX_FOR_GRID", "30"))
+# Filtro de regimen (Kaufman ER sobre 20 velas cerradas): por encima del umbral
+# el mercado es direccional y el grid mean-reversion no abre (solo entradas).
+# Auditoria OOS: mejora PF y DD en los 3 simbolos.
+MAX_ER_FOR_GRID = float(os.getenv("MAX_ER_FOR_GRID", "0.30"))
+ER_PERIOD = 20
+# Filtro RSI: LONG solo cuando RSI <= RSI_LONG_MAX (dip), SHORT solo cuando
+# RSI >= RSI_SHORT_MIN (rally). Sobreescribible por variable de entorno.
+RSI_FILTER = os.getenv("RSI_FILTER", "true").lower() == "true"
+RSI_LONG_MAX = float(os.getenv("RSI_LONG_MAX", "45"))
+RSI_SHORT_MIN = float(os.getenv("RSI_SHORT_MIN", "55"))
+# Filtro de volumen relativo (volume / SMA_volume_20): evita operar en velas sin
+# interes (<0.5) o con panico/euforia (>3.0). Desactivado por defecto para no
+# reducir entradas sin validacion previa.
+VOL_FILTER = os.getenv("VOL_FILTER", "false").lower() == "true"
+VOL_MIN = float(os.getenv("VOL_MIN", "0.5"))
+VOL_MAX = float(os.getenv("VOL_MAX", "3.0"))
+# Caducidad de los params aceptados: si el WFO lleva mas de N horas rechazando
+# params nuevos para un simbolo, los ultimos aceptados ya no reflejan el regimen
+# actual y se pausan las entradas (las salidas NUNCA se bloquean).
+STALE_PARAMS_MAX_AGE_H = float(os.getenv("STALE_PARAMS_MAX_AGE_H", "24"))
+REPLAY_SLIPPAGE_PCT = float(os.getenv("REPLAY_SLIPPAGE_PCT", "0.0002"))
 
 INSTANCE_LOCK_PORT = 45678 # Puerto localhost para el single-instance lock
 
@@ -162,6 +307,220 @@ def acquire_instance_lock():
         sys.exit(1)
     logger.info(f"Single-instance lock adquirido en 127.0.0.1:{INSTANCE_LOCK_PORT}")
     return s
+
+# --- HELPERS DE RIESGO (logica pura, cubierta por tests) ---
+def tp_covers_fees(direction, entry, tp):
+    """True si la distancia al TP cubre al menos MIN_TP_DISTANCE_PCT (~3x fee)."""
+    if not entry or entry <= 0:
+        return False
+    dist = (tp - entry) / entry if direction == 'LONG' else (entry - tp) / entry
+    return dist >= MIN_TP_DISTANCE_PCT
+
+# Limites del espacio de busqueda del WFO para risk_pct: tambien se usan para
+# CLAMPEAR params antiguos cargados del estado (p.ej. risk_pct=0.139 heredado
+# de una version anterior del espacio de busqueda).
+RISK_PCT_MIN = 0.05
+RISK_PCT_MAX = 0.12
+
+def get_sl_mult_range(sym):
+    """Rango de sl_mult en el espacio de busqueda WFO, por simbolo.
+    Reservado para ajuste futuro por simbolo. Actualmente global [0.50, 1.40]."""
+    return (0.50, 1.40)
+
+def get_er_max(sym):
+    """Devuelve el umbral ER maximo especifico por simbolo (0.20 BTC, 0.20 ETH, 0.22 SOL)."""
+    s = str(sym) if sym else ''
+    if 'SOL' in s:
+        return 0.22
+    elif 'BTC' in s:
+        return 0.20
+    elif 'ETH' in s:
+        return 0.20
+    return 0.20
+
+def get_wfo_pf_min(sym):
+    """PF minimo OOS por simbolo para aceptar params WFO."""
+    s = str(sym) if sym else ''
+    if 'SOL' in s: return 1.22
+    if 'BTC' in s: return 1.00
+    if 'ETH' in s: return 1.01
+    return 1.05
+
+def get_wfo_dd_max(sym):
+    """DD maximo OOS por simbolo para aceptar params WFO."""
+    s = str(sym) if sym else ''
+    if 'SOL' in s: return 0.18
+    if 'BTC' in s: return 0.35
+    if 'ETH' in s: return 0.30
+    return 0.25
+
+def get_wfo_trades_min(sym):
+    """Minimo de trades OOS por simbolo."""
+    s = str(sym) if sym else ''
+    if 'SOL' in s: return 2
+    if 'BTC' in s: return 1
+    return 2
+
+def get_rsi_long_max(sym):
+    """RSI maximo para LONG por simbolo (solo entra si RSI <= valor = sobrevendido/dip)."""
+    s = str(sym) if sym else ''
+    if 'SOL' in s: return 48.0
+    if 'BTC' in s: return 45.0
+    if 'ETH' in s: return 40.0
+    return 45.0
+
+def get_rsi_short_min(sym):
+    """RSI minimo para SHORT por simbolo (solo entra si RSI >= valor = sobrecomprado/rally)."""
+    s = str(sym) if sym else ''
+    if 'SOL' in s: return 46.0
+    if 'BTC' in s: return 55.0
+    if 'ETH' in s: return 60.0
+    return 55.0
+
+# --- Asignacion de capital por simbolo ---
+ALLOCATION_WEIGHT_BTC = float(os.getenv("ALLOCATION_WEIGHT_BTC", "0.05"))
+ALLOCATION_WEIGHT_ETH = float(os.getenv("ALLOCATION_WEIGHT_ETH", "0.15"))
+ALLOCATION_WEIGHT_SOL = float(os.getenv("ALLOCATION_WEIGHT_SOL", "2.8"))
+
+def get_allocation_weight(sym):
+    """Peso relativo de capital por simbolo. Los pesos se normalizan al
+    arranque para que sumen 1.0 (currency-agnostic). SOL recibe mas capital
+    porque historicamente es el que mejor PF OOS produce; BTC recibe menos
+    porque su grid mean-reversion sufre en regimenes direccionales.
+
+    El WFO SIEMPRE optimiza a capital fijo ($250) — el peso solo escala el
+    capital con que se opera, no los params. Mantiene paridad porque los
+    mismos params+replay engine se usan en ambos lados."""
+    s = str(sym) if sym else ''
+    if 'SOL' in s: return ALLOCATION_WEIGHT_SOL
+    if 'BTC' in s: return ALLOCATION_WEIGHT_BTC
+    if 'ETH' in s: return ALLOCATION_WEIGHT_ETH
+    return 1.0
+
+def get_risk_pct_max(sym):
+    """Tope de risk_pct en el espacio de busqueda WFO, por simbolo.
+    SOL puede arriesgar mas (PF OOS historico alto); BTC se limita."""
+    s = str(sym) if sym else ''
+    if 'SOL' in s: return float(os.getenv("RISK_PCT_MAX_SOL", "0.35"))
+    if 'BTC' in s: return float(os.getenv("RISK_PCT_MAX_BTC", "0.15"))
+    if 'ETH' in s: return float(os.getenv("RISK_PCT_MAX_ETH", "0.18"))
+    return RISK_PCT_MAX
+
+def get_risk_pct_min(sym):
+    """Minimo de risk_pct en el espacio de busqueda WFO, por simbolo."""
+    s = str(sym) if sym else ''
+    if 'SOL' in s: return float(os.getenv("RISK_PCT_MIN_SOL", "0.20"))
+    if 'BTC' in s: return float(os.getenv("RISK_PCT_MIN_BTC", "0.06"))
+    if 'ETH' in s: return float(os.getenv("RISK_PCT_MIN_ETH", "0.10"))
+    return RISK_PCT_MIN
+
+def clamp_risk_pct(risk_pct, sym=None):
+    """Clampea risk_pct al espacio de busqueda del WFO.
+    Si se pasa sym, usa el rango por simbolo [get_risk_pct_min, get_risk_pct_max].
+    Si no, usa el rango global [RISK_PCT_MIN, RISK_PCT_MAX]."""
+    try:
+        r = float(risk_pct)
+    except (TypeError, ValueError):
+        return MAX_RISK
+    if sym:
+        return min(max(r, get_risk_pct_min(sym)), get_risk_pct_max(sym))
+    return min(max(r, RISK_PCT_MIN), RISK_PCT_MAX)
+
+def grid_geometry_ok(params):
+    """Guarda de geometria (auditoria 141 trades reales: avg win +0.76 vs avg
+    loss -2.05, PF 0.39): el TP debe quedar AL MENOS tan lejos como el SL en
+    terminos de ATR, en AMBOS lados (TP_atr = spacing_mult * tp_mult >= sl_mult).
+    Un trade con TP < SL necesita un win rate irreal para ganar neto de fees."""
+    try:
+        return (params['grid_spacing_mult_l'] * params['tp_mult_l'] >= params['sl_mult_l'] and
+                params['grid_spacing_mult_s'] * params['tp_mult_s'] >= params['sl_mult_s'])
+    except (KeyError, TypeError):
+        return False
+
+def side_geometry_ok(direction, entry, tp, sl):
+    """Guarda de geometria en PRECIOS para una entrada concreta: la distancia
+    al TP debe ser >= que la distancia al SL (recompensa >= riesgo)."""
+    if not entry or entry <= 0:
+        return False
+    tp_dist = (tp - entry) if direction == 'LONG' else (entry - tp)
+    sl_dist = (entry - sl) if direction == 'LONG' else (sl - entry)
+    return tp_dist > 0 and sl_dist > 0 and tp_dist >= sl_dist
+
+def efficiency_ratio(closes, period=ER_PERIOD):
+    """Kaufman Efficiency Ratio sobre las ultimas `period` velas (cerradas).
+    ~1 = mercado direccional (el grid no entra), ~0 = chop puro (ideal grid)."""
+    if closes is None or len(closes) < period + 1:
+        return 0.0
+    c = [float(x) for x in closes]
+    change = abs(c[-1] - c[-1 - period])
+    path = sum(abs(c[i] - c[i - 1]) for i in range(len(c) - period, len(c)))
+    return change / path if path > 0 else 0.0
+
+def params_are_stale(wfo_entry, now_ts, max_age_h=None):
+    """True si los params aceptados superan la edad maxima (o no traen fecha de
+    aceptacion): el WFO lleva demasiado tiempo sin validar edge fresco y operar
+    con params obsoletos es la mayor fuente de sangrado (proyeccion 20d)."""
+    if max_age_h is None:
+        max_age_h = STALE_PARAMS_MAX_AGE_H
+    ts = (wfo_entry or {}).get('accepted_at')
+    if not ts:
+        return True
+    return (now_ts - ts) > max_age_h * 3600
+
+def risk_governor_multiplier(history, balance):
+    """Multiplicador de risk_pct segun la expectancy REAL de los ultimos trades:
+    1.0 normal, 0.5 con expectancy negativa, 0.25 si la ventana acumula una
+    perdida neta >= 5% del balance, 0.0 si la perdida >= 8% (pausa completa).
+    Es un freno, nunca un acelerador."""
+    if balance <= 0:
+        return 1.0
+    trades = history[-RISK_GOVERNOR_WINDOW:]
+    if len(trades) < RISK_GOVERNOR_MIN_TRADES:
+        return 1.0
+    net = sum(t.get('pnl', 0.0) for t in trades)
+    if net <= balance * RISK_GOVERNOR_HALT2_PNL_PCT:
+        return 0.0
+    if net <= balance * RISK_GOVERNOR_HALT_PNL_PCT:
+        return 0.25
+    if net < 0:
+        return 0.5
+    return 1.0
+
+def daily_risk_multiplier(daily_start_balance, balance, consecutive_losses):
+    """Aplica freno por caída desde el capital de inicio del día UTC."""
+    if not RISK_CONTROLS_ENABLED or daily_start_balance <= 0:
+        return 1.0, False
+    drawdown = max(0.0, (daily_start_balance - balance) / daily_start_balance)
+    reduced = (drawdown >= DAILY_DRAWDOWN_REDUCE_PCT or
+               consecutive_losses >= LOSS_STREAK_REDUCE_AT)
+    halt = KILL_SWITCH_ENABLED and drawdown >= DAILY_DRAWDOWN_HALT_PCT
+    return (RISK_REDUCED_MULTIPLIER if reduced else 1.0), halt
+
+def replay_quality(initial_balance, final_balance, trades):
+    """Métricas para aceptar parámetros sólo cuando sobreviven fuera de muestra."""
+    equity = initial_balance
+    peak = equity
+    max_drawdown = 0.0
+    wins = 0.0
+    losses = 0.0
+    for trade in trades:
+        pnl = trade['pnl']
+        equity += pnl
+        peak = max(peak, equity)
+        max_drawdown = max(max_drawdown, (peak - equity) / peak if peak else 0.0)
+        if pnl > 0:
+            wins += pnl
+        elif pnl < 0:
+            losses -= pnl
+    return {
+        # Cast a tipos nativos: los pnl vienen de numpy (float64/bool_) y un
+        # numpy.bool_ rompe json.dump al guardar el estado (bug detectado en
+        # produccion en cuanto un WFO volvio a ser aceptado).
+        'profitable': bool(final_balance > initial_balance),
+        'profit_factor': float(wins / losses) if losses else (float('inf') if wins else 0.0),
+        'max_drawdown': float(max_drawdown),
+        'trades': len(trades),
+    }
 
 # --- INICIALIZAR EXCHANGE ---
 # En modo PAPER este cliente es SOLO de datos publicos mainnet (fetch_ohlcv),
@@ -183,13 +542,24 @@ else:
 # --- FUNCIONES DE DATOS ---
 def get_historical_data(sym, limit=288): # 3 dias = 288 velas de 15m
     try:
-        ohlcv = exchange.fetch_ohlcv(sym, TIMEFRAME, limit=limit)
+        try:
+            ohlcv = exchange.fetch_ohlcv(sym, TIMEFRAME, limit=limit)
+        except Exception:
+            # Reintento unico tras 2s: cubre fallos transitorios de red o
+            # rate-limit de Binance (vistos en produccion con limit=960).
+            time.sleep(2)
+            ohlcv = exchange.fetch_ohlcv(sym, TIMEFRAME, limit=limit)
         df = pd.DataFrame(ohlcv, columns=['timestamp', 'open', 'high', 'low', 'close', 'volume'])
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
         df.set_index('timestamp', inplace=True)
 
         df['ATR'] = ta.atr(df['high'], df['low'], df['close'], length=14)
         df['EMA20'] = ta.ema(df['close'], length=20)
+        df['RSI'] = ta.rsi(df['close'], length=14)
+        adx = ta.adx(df['high'], df['low'], df['close'], length=14)
+        df['ADX'] = adx['ADX_14'] if adx is not None else 0.0
+        df['VOL_SMA20'] = df['volume'].rolling(20).mean()
+        df['REL_VOL'] = df['volume'] / df['VOL_SMA20']
         df.dropna(inplace=True)
         return df
     except Exception as e:
@@ -197,9 +567,24 @@ def get_historical_data(sym, limit=288): # 3 dias = 288 velas de 15m
         return pd.DataFrame()
 
 # --- OPTIMIZADOR WFO (SIMULACION DE MOTOR REAL-WORLD) ---
-def simulate_grid(df, params):
+def simulate_grid(df, params, sym=None):
     """Devuelve (capital_final, trade_count). El trade_count alimenta el guardrail
     del objetivo Optuna (paridad con la simulacion de referencia)."""
+    er_max = get_er_max(sym) if sym else MAX_ER_FOR_GRID
+    rsi_max = get_rsi_long_max(sym) if sym else RSI_LONG_MAX
+    rsi_min = get_rsi_short_min(sym) if sym else RSI_SHORT_MIN
+    capital, trades = run_live_replay(
+        df, params, initial_balance=250.0, leverage=LEVERAGE,
+        cap_per_trade=MAX_MARGIN_PER_TRADE_PCT,
+        cap_total=MAX_TOTAL_MARGIN_PCT, fee_round_trip=FEE_ROUND_TRIP,
+        min_tp_distance_pct=MIN_TP_DISTANCE_PCT, max_adx=MAX_ADX_FOR_GRID,
+        slippage_pct=REPLAY_SLIPPAGE_PCT, er_max=er_max, er_period=ER_PERIOD,
+        rsi_filter=RSI_FILTER, rsi_long_max=rsi_max, rsi_short_min=rsi_min,
+        vol_filter=VOL_FILTER, vol_min=VOL_MIN, vol_max=VOL_MAX)
+    return capital, len(trades)
+
+    # Implementación histórica conservada temporalmente como referencia durante
+    # la migración; el WFO usa el motor ejecutable de arriba.
     close = df['close'].values
     high = df['high'].values
     low = df['low'].values
@@ -220,6 +605,13 @@ def simulate_grid(df, params):
         entry_short = close[i] + (c_atr * params['grid_spacing_mult_s'])
         sl_short = entry_short + (c_atr * params['sl_mult_s'])
         tp_short = entry_short - ((entry_short - close[i]) * params['tp_mult_s'])
+
+        # Filtro anti-fees (paridad con el live): si el TP de un lado no cubre
+        # ~3x el fee round-trip, ese lado no se opera en esta iteracion.
+        if entry_long <= 0 or (tp_long - entry_long) / entry_long < MIN_TP_DISTANCE_PCT:
+            entry_long = -1.0 # curr_l <= -1 nunca se cumple: lado long inhabilitado
+        if entry_short <= 0 or (entry_short - tp_short) / entry_short < MIN_TP_DISTANCE_PCT:
+            entry_short = float('inf') # curr_h >= inf nunca se cumple: lado short inhabilitado
 
         long_active = False; short_active = False
         salida_l = None; salida_s = None
@@ -271,117 +663,125 @@ def simulate_grid(df, params):
             pos_size = (capital * params['risk_pct']) / max(riesgo_real_pct, 0.001)
             if pos_size > HARD_CAP_LIQUIDITY: pos_size = HARD_CAP_LIQUIDITY
             capital += pos_size * ((entry_short - salida_s) / entry_short - 0.0008)
-            trade_count += 1
-
-        max_exit = max(i, exit_idx_l if long_active else i, exit_idx_s if short_active else i)
-        i = max_exit if max_exit > i else i + 1
-
-    return capital, trade_count
-
-def simulate_grid_metrics(df, params):
-    close = df['close'].values
-    high = df['high'].values
-    low = df['low'].values
-    atr = df['ATR'].values
-    ema20 = df['EMA20'].values
-    n = len(df)
-    i = 0
-    wins = 0
-    losses = 0
-
-    while i < n - 1:
-        c_atr = atr[i]
-
-        entry_long = close[i] - (c_atr * params['grid_spacing_mult_l'])
-        sl_long = entry_long - (c_atr * params['sl_mult_l'])
-        tp_long = entry_long + ((close[i] - entry_long) * params['tp_mult_l'])
-
-        entry_short = close[i] + (c_atr * params['grid_spacing_mult_s'])
-        sl_short = entry_short + (c_atr * params['sl_mult_s'])
-        tp_short = entry_short - ((entry_short - close[i]) * params['tp_mult_s'])
-
-        long_active = False; short_active = False
-        salida_l = None; salida_s = None
-        exit_idx_l = i; exit_idx_s = i
-
-        for j in range(1, 41):
-            if i+j >= n: break
-            curr_h = high[i+j]; curr_l = low[i+j]; curr_c = close[i+j]
-
-            # Pessimistic Mode
-            if not long_active:
-                if curr_l <= entry_long:
-                    long_active = True
-                    if curr_h >= tp_long and curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
-                    elif curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
-                    elif curr_h >= tp_long: salida_l = tp_long; exit_idx_l = i+j
-            else:
-                if salida_l is None:
-                    if curr_h >= tp_long and curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
-                    elif curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
-                    elif curr_h >= tp_long: salida_l = tp_long; exit_idx_l = i+j
-                    elif j == 20 and curr_c <= ema20[i+j]: salida_l = curr_c; exit_idx_l = i+j
-                    elif j == 40: salida_l = curr_c; exit_idx_l = i+j
-
-            if not short_active:
-                if curr_h >= entry_short:
-                    short_active = True
-                    if curr_l <= tp_short and curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
-                    elif curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
-                    elif curr_l <= tp_short: salida_s = tp_short; exit_idx_s = i+j
-            else:
-                if salida_s is None:
-                    if curr_l <= tp_short and curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
-                    elif curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
-                    elif curr_l <= tp_short: salida_s = tp_short; exit_idx_s = i+j
-                    elif j == 20 and curr_c >= ema20[i+j]: salida_s = curr_c; exit_idx_s = i+j
-                    elif j == 40: salida_s = curr_c; exit_idx_s = i+j
-
-            if (not long_active or salida_l is not None) and (not short_active or salida_s is not None): break
-
-        # Win-rate NETO de comisiones (-0.0008), no en bruto: antes reportaba 98-100% ficticio
-        if long_active and salida_l is not None:
-            pnl_neto_pct = (salida_l - entry_long) / entry_long - 0.0008
-            if pnl_neto_pct > 0: wins += 1
-            else: losses += 1
-        if short_active and salida_s is not None:
-            pnl_neto_pct = (entry_short - salida_s) / entry_short - 0.0008
-            if pnl_neto_pct > 0: wins += 1
-            else: losses += 1
-
-        max_exit = max(i, exit_idx_l if long_active else i, exit_idx_s if short_active else i)
-        i = max_exit if max_exit > i else i + 1
-
-    total = wins + losses
-    return {
-        'win_rate': wins / total if total > 0 else 0.5,
-        'total_trades': total
-    }
+def simulate_grid_metrics(df, params, sym=None):
+    er_max = get_er_max(sym) if sym else MAX_ER_FOR_GRID
+    rsi_max = get_rsi_long_max(sym) if sym else RSI_LONG_MAX
+    rsi_min = get_rsi_short_min(sym) if sym else RSI_SHORT_MIN
+    _, replay_trades = run_live_replay(
+        df, params, initial_balance=250.0, leverage=LEVERAGE,
+        cap_per_trade=MAX_MARGIN_PER_TRADE_PCT,
+        cap_total=MAX_TOTAL_MARGIN_PCT, fee_round_trip=FEE_ROUND_TRIP,
+        min_tp_distance_pct=MIN_TP_DISTANCE_PCT, max_adx=MAX_ADX_FOR_GRID,
+        slippage_pct=REPLAY_SLIPPAGE_PCT, er_max=er_max, er_period=ER_PERIOD,
+        rsi_filter=RSI_FILTER, rsi_long_max=rsi_max, rsi_short_min=rsi_min,
+        vol_filter=VOL_FILTER, vol_min=VOL_MIN, vol_max=VOL_MAX)
+    wins = sum(1 for trade in replay_trades if trade['pnl'] > 0)
+    total = len(replay_trades)
+    return {'win_rate': wins / total if total else 0.5, 'total_trades': total}
 
 def run_wfo_daily(sym):
-    logger.info(f"Ejecutando Optimizador WFO para {sym} (Ultimos 3 dias)...")
-    df = get_historical_data(sym, limit=288) # 3 days of 15m candles
-    if df.empty or len(df) < 50: return None
+    er_max = get_er_max(sym)
+    rsi_max = get_rsi_long_max(sym)
+    rsi_min = get_rsi_short_min(sym)
+    wfo_pf_min = get_wfo_pf_min(sym)
+    wfo_dd_max = get_wfo_dd_max(sym)
+    wfo_trades_min = get_wfo_trades_min(sym)
+    logger.info(f"Ejecutando WFO OOS para {sym} (10 dias, train/validacion, er_max={er_max}, rsi_max={rsi_max}, rsi_min={rsi_min})...")
+    df = get_historical_data(sym, limit=960)
+    validation_bars = 192
+    if df.empty or len(df) < validation_bars * 2 + 200:
+        return None
+    train_df = df.iloc[:-(validation_bars * 2)]
+    validation_a = df.iloc[-(validation_bars * 2):-validation_bars]
+    validation_b = df.iloc[-validation_bars:]
+
+    def _train_score(df_chunk, params):
+        final, trades = run_live_replay(df_chunk, params, 250.0, LEVERAGE,
+                                        MAX_MARGIN_PER_TRADE_PCT, MAX_TOTAL_MARGIN_PCT,
+                                        FEE_ROUND_TRIP, MIN_TP_DISTANCE_PCT,
+                                        MAX_ADX_FOR_GRID, REPLAY_SLIPPAGE_PCT,
+                                        trend_filter=True, er_max=er_max, er_period=ER_PERIOD,
+                                        rsi_filter=RSI_FILTER, rsi_long_max=rsi_max, rsi_short_min=rsi_min,
+        vol_filter=VOL_FILTER, vol_min=VOL_MIN, vol_max=VOL_MAX)
+        if len(trades) < 2:
+            return None
+        q = replay_quality(250.0, final, trades)
+        if q['max_drawdown'] > 0.25:
+            return None
+        return (final - 250.0) * (q['profit_factor'] ** 1.0) / (1.0 + 1.5 * q['max_drawdown'])
 
     def objective(trial):
+        sl_min, sl_max = get_sl_mult_range(sym)
+        rmin, rmax = get_risk_pct_min(sym), get_risk_pct_max(sym)
         params = {
-            'grid_spacing_mult_l': trial.suggest_float('grid_spacing_mult_l', 0.5, 3.0),
-            'tp_mult_l': trial.suggest_float('tp_mult_l', 0.5, 2.0),
-            'sl_mult_l': trial.suggest_float('sl_mult_l', 1.0, 4.0),
-            'grid_spacing_mult_s': trial.suggest_float('grid_spacing_mult_s', 0.5, 3.0),
-            'tp_mult_s': trial.suggest_float('tp_mult_s', 0.5, 2.0),
-            'sl_mult_s': trial.suggest_float('sl_mult_s', 1.0, 4.0),
-            'risk_pct': trial.suggest_float('risk_pct', 0.10, 0.20) # La simulacion lo optimiza; el live lo tenia fijo
+            'grid_spacing_mult_l': trial.suggest_float('grid_spacing_mult_l', 0.50, 1.60),
+            'tp_mult_l': trial.suggest_float('tp_mult_l', 1.40, 3.20),
+            'sl_mult_l': trial.suggest_float('sl_mult_l', sl_min, sl_max),
+            'grid_spacing_mult_s': trial.suggest_float('grid_spacing_mult_s', 0.50, 1.60),
+            'tp_mult_s': trial.suggest_float('tp_mult_s', 1.40, 3.20),
+            'sl_mult_s': trial.suggest_float('sl_mult_s', sl_min, sl_max),
+            'risk_pct': trial.suggest_float('risk_pct', rmin, rmax)
         }
-        cap, t_count = simulate_grid(df, params)
-        if t_count < 3: return -1000 # Guardrail de la simulacion: penalizar parametros con <3 trades
-        return cap
+        if not grid_geometry_ok(params): return -1000
+        score_val = _train_score(train_df, params)
+        if score_val is None: return -1000
+        return score_val
 
     # Seed fija para reproducibilidad (paridad con la simulacion de referencia)
     study = optuna.create_study(direction='maximize', sampler=optuna.samplers.TPESampler(seed=42))
-    study.optimize(objective, n_trials=200)
+    study.optimize(objective, n_trials=350)
+
+    # Si ningun trial supera el guardrail de trades minimos, no hay params fiables:
+    # conservar los anteriores (run_all_wfo simplemente no sobrescribe este simbolo).
+    if study.best_value is None or study.best_value <= -1000:
+        logger.warning(f"WFO {sym}: ningun trial supera el minimo de 5 trades y guardrailes; se conservan los params anteriores.")
+        return None
 
     best = study.best_params
+
+    # La aceptación ocurre exclusivamente en datos no usados para seleccionar.
+    _, replay_a = run_live_replay(validation_a, best, 250.0, LEVERAGE,
+                                  MAX_MARGIN_PER_TRADE_PCT, MAX_TOTAL_MARGIN_PCT,
+                                  FEE_ROUND_TRIP, MIN_TP_DISTANCE_PCT,
+                                  MAX_ADX_FOR_GRID, REPLAY_SLIPPAGE_PCT,
+                                  trend_filter=True, er_max=er_max, er_period=ER_PERIOD,
+                                  rsi_filter=RSI_FILTER, rsi_long_max=rsi_max, rsi_short_min=rsi_min,
+        vol_filter=VOL_FILTER, vol_min=VOL_MIN, vol_max=VOL_MAX)
+    _, replay_b = run_live_replay(validation_b, best, 250.0, LEVERAGE,
+                                  MAX_MARGIN_PER_TRADE_PCT, MAX_TOTAL_MARGIN_PCT,
+                                  FEE_ROUND_TRIP, MIN_TP_DISTANCE_PCT,
+                                  MAX_ADX_FOR_GRID, REPLAY_SLIPPAGE_PCT,
+                                  trend_filter=True, er_max=er_max, er_period=ER_PERIOD,
+                                  rsi_filter=RSI_FILTER, rsi_long_max=rsi_max, rsi_short_min=rsi_min,
+        vol_filter=VOL_FILTER, vol_min=VOL_MIN, vol_max=VOL_MAX)
+    validation_ab = df.iloc[-(validation_bars * 2):]
+    _, replay_ab = run_live_replay(validation_ab, best, 250.0, LEVERAGE,
+                                   MAX_MARGIN_PER_TRADE_PCT, MAX_TOTAL_MARGIN_PCT,
+                                   FEE_ROUND_TRIP, MIN_TP_DISTANCE_PCT,
+                                   MAX_ADX_FOR_GRID, REPLAY_SLIPPAGE_PCT,
+                                   trend_filter=True, er_max=er_max, er_period=ER_PERIOD,
+                                  rsi_filter=RSI_FILTER, rsi_long_max=rsi_max, rsi_short_min=rsi_min,
+        vol_filter=VOL_FILTER, vol_min=VOL_MIN, vol_max=VOL_MAX)
+
+    def _q(trades):
+        return replay_quality(250.0, 250.0 + sum(t['pnl'] for t in trades), trades)
+
+    quality_a = _q(replay_a)
+    quality_b = _q(replay_b)
+    quality_ab = _q(replay_ab)
+
+    accepted = (
+        quality_ab['max_drawdown'] <= wfo_dd_max and
+        quality_ab['profit_factor'] >= wfo_pf_min and
+        quality_ab['trades'] >= wfo_trades_min and
+        quality_ab['profitable']
+    )
+    if not accepted:
+        logger.warning(f"WFO {sym}: params rechazados por validacion OOS; "
+                       f"A(PF={quality_a['profit_factor']:.2f}, DD={quality_a['max_drawdown']:.2%}) "
+                       f"B(PF={quality_b['profit_factor']:.2f}, DD={quality_b['max_drawdown']:.2%}) "
+                       f"A+B(PF={quality_ab['profit_factor']:.2f}, DD={quality_ab['max_drawdown']:.2%}, trades={quality_ab['trades']}).")
+        return None
 
     # Calculate current targets based on last closed candle
     latest = df.iloc[-2]
@@ -392,11 +792,18 @@ def run_wfo_daily(sym):
     entry_l = c_close - (c_atr * best['grid_spacing_mult_l'])
     entry_s = c_close + (c_atr * best['grid_spacing_mult_s'])
 
-    metrics = simulate_grid_metrics(df, best)
+    metrics = simulate_grid_metrics(validation_b, best, sym=sym)
+    metrics['validation_a'] = quality_a
+    metrics['validation_b'] = quality_b
+    metrics['validation_ab'] = quality_ab
+    logger.info(f"WFO {sym}: params ACEPTADOS; OOS A+B(PF={quality_ab['profit_factor']:.2f}, "
+                f"DD={quality_ab['max_drawdown']:.2%}, trades={quality_ab['trades']}), "
+                f"risk_pct={best['risk_pct']:.3f}, er20={efficiency_ratio(df['close'].iloc[:-1].values):.3f}.")
 
     return {
         'params': best,
         'metrics': metrics,
+        'accepted_at': int(time.time()),
         'targets': {
             'long_entry': entry_l,
             'long_tp': entry_l + ((c_close - entry_l) * best['tp_mult_l']),
@@ -408,7 +815,15 @@ def run_wfo_daily(sym):
         'indicators': {
             'atr': c_atr,
             'ema20': c_ema,
+            'adx': latest.get('ADX', 0.0) if 'ADX' in df else 0.0,
+            'rsi': latest.get('RSI', 50.0) if 'RSI' in df else 50.0,
+            'ema_rising': (df['EMA20'].iloc[-2] >= df['EMA20'].iloc[-10]) if (len(df) >= 10 and 'EMA20' in df) else True,
+            'ema_falling': (df['EMA20'].iloc[-2] <= df['EMA20'].iloc[-10]) if (len(df) >= 10 and 'EMA20' in df) else True,
             'close': c_close,
+            'high': latest['high'],
+            'low': latest['low'],
+            'er20': efficiency_ratio(df['close'].iloc[:-1].values),
+            'rel_vol': latest.get('REL_VOL', 1.0) if 'REL_VOL' in df else 1.0,
             'timestamp': str(latest.name)
         }
     }
@@ -429,7 +844,7 @@ class PaperExecutor:
       pasa el caller (es el mid del WS en ese instante); para cierres se consulta
       el price_getter y, si no esta disponible, el ultimo precio conocido del simbolo.
     """
-    def __init__(self, leverage: int = 3, price_getter=None):
+    def __init__(self, leverage: int = 5, price_getter=None):
         self.leverage = leverage
         self.price_getter = price_getter
         self.last_prices = {} # ultimo mid conocido por simbolo (fallback de cierre)
@@ -500,6 +915,7 @@ class LiveTrader:
         self._pos_locks = {}         # asyncio.Lock por (sym, direction): serializa apertura/cierre (anti-duplicados)
         self._cap_block_log = {}     # Throttle de logs de entradas bloqueadas por cap de margen (por simbolo)
         self._last_cap_alert = 0.0   # Throttle de alerta Telegram por cap de margen (max 1/hora global)
+        self._last_risk_mult = 1.0   # Ultimo multiplicador del gobernador de riesgo aplicado
         if IS_PAPER:
             self.executor = PaperExecutor(leverage=LEVERAGE)
         else:
@@ -654,6 +1070,24 @@ class LiveTrader:
         self.state.setdefault('free_balance', 0.0)
         self.state.setdefault('last_close_block', {}) # Anti-churn: {sym: {dir: bloque_15m_del_ultimo_cierre}}
         self.state.setdefault('execution_mode', EXECUTION_MODE)
+        self.state.setdefault('daily_risk', {})
+        self.state.setdefault('wfo_disabled', {})
+        # Saneamiento al arrancar: un simbolo con params WFO aceptados nunca debe
+        # quedar inhabilitado por rechazos posteriores (estado heredado de la
+        # version que congelaba el simbolo entero y dejaba posiciones sin salidas).
+        for sym in list(self.state['wfo_disabled']):
+            if sym in self.state.get('wfo_data', {}):
+                del self.state['wfo_disabled'][sym]
+
+    def _refresh_daily_risk_state(self):
+        """Inicializa el capital de referencia una vez por día UTC."""
+        today = datetime.now(timezone.utc).date().isoformat()
+        daily = self.state.setdefault('daily_risk', {})
+        if daily.get('date') != today:
+            daily.update({'date': today, 'start_balance': self.state.get('balance', 0.0),
+                          'consecutive_losses': 0, 'halted': False, 'halt_alerted': False})
+            logger.info(f"[RIESGO DIARIO] Nuevo día UTC. Capital de referencia: ${daily['start_balance']:.2f}")
+        return daily
 
     def save_state(self):
         # Escritura atomica: tmp -> backup del anterior -> os.replace
@@ -707,11 +1141,71 @@ class LiveTrader:
             logger.error(f"[SANIDAD] Niveles invalidos para {direction} en {sym}: entry={entry_price}, tp={tp_open}, sl={sl_open}. Entrada DESCARTADA.")
             return
 
+        # --- GUARDA DE GEOMETRIA (recompensa >= riesgo) ---
+        # Nunca abrir un trade cuyo TP quede mas cerca que el SL, aunque los
+        # params vengan de un WFO antiguo: esa asimetria en contra es la que
+        # vaciaba la cuenta (auditoria: PF historico 0.39, SL medio -2.05 USD).
+        if not side_geometry_ok(direction, entry_price, tp_open, sl_open):
+            geo_key = ('geo', sym, direction)
+            if time.time() - self._cap_block_log.get(geo_key, 0) >= 300:
+                logger.info(f"[GEOMETRIA] Entrada {direction} en {sym} descartada: TP mas cerca que el SL (recompensa < riesgo).")
+                self._cap_block_log[geo_key] = time.time()
+            return
+
+        # --- FILTRO ANTI-FEES ---
+        # Si el TP no cubre ~3x el fee round-trip, el trade regala comisiones
+        # (el fee llegaba a comerse el 46% del PnL bruto): no entrar. Log throttled.
+        if not tp_covers_fees(direction, entry_price, tp_open):
+            fee_key = ('fee', sym, direction)
+            if time.time() - self._cap_block_log.get(fee_key, 0) >= 300:
+                dist_pct = abs(tp_open - entry_price) / entry_price * 100
+                logger.info(f"[FILTRO FEES] Entrada {direction} en {sym} descartada: TP a {dist_pct:.3f}% (< {MIN_TP_DISTANCE_PCT*100:.2f}%).")
+                self._cap_block_log[fee_key] = time.time()
+            return
+
         # Riesgo por trade optimizado por el WFO (fallback MAX_RISK si aun no hay WFO)
         wfo_params = wfo_sym.get('params', {})
-        risk_pct = wfo_params.get('risk_pct', MAX_RISK)
         balance = self.state['balance']
-        ideal_size = (balance * risk_pct) / max(riesgo_real_pct, 0.001)
+
+        # --- GOBERNADOR DE RIESGO DINAMICO ---
+        # Multiplica risk_pct segun la expectancy REAL de los ultimos trades.
+        # Es un freno (x0.5 / x0.25), nunca un acelerador: Kelly con las stats
+        # reales del bot da f* <= 0.
+        daily = self._refresh_daily_risk_state()
+        daily_mult, daily_halt = daily_risk_multiplier(
+            daily.get('start_balance', balance), balance, daily.get('consecutive_losses', 0))
+        daily['halted'] = daily_halt
+        if daily_halt:
+            logger.error(f"[KILL SWITCH] Entradas detenidas por drawdown diario (balance ${balance:.2f} vs inicio del dia ${daily.get('start_balance', balance):.2f}).")
+            if not daily.get('halt_alerted'):
+                daily['halt_alerted'] = True
+                run_bg(send_telegram_alert(
+                    f"🛑 *KILL SWITCH DIARIO ({MODE_LABEL})*\n\n"
+                    f"🔸 *Drawdown del día:* `{(daily.get('start_balance', balance) - balance):,.2f}` USDT\n"
+                    f"🔸 *Acción:* no se abren entradas nuevas hasta el próximo día UTC. "
+                    f"Las posiciones abiertas siguen gestionándose (SL/TP/trailing)."
+                ))
+            self.save_state()
+            return
+        mult = risk_governor_multiplier(self.state.get('history', []), balance) * daily_mult
+        if mult != self._last_risk_mult:
+            logger.info(f"[GOBERNADOR] Multiplicador de riesgo {self._last_risk_mult} -> {mult} (ventana de {RISK_GOVERNOR_WINDOW} trades).")
+            if mult < self._last_risk_mult:
+                run_bg(send_telegram_alert(
+                    f"🛡️ *GOBERNADOR DE RIESGO ({MODE_LABEL})*\n\n"
+                    f"🔸 *Expectancy reciente:* `negativa`\n"
+                    f"🔸 *Acción:* multiplicador de riesgo `{self._last_risk_mult}` → `{mult}`\n"
+                    f"🔸 *Ventana evaluada:* últimos `{RISK_GOVERNOR_WINDOW}` trades"
+                ))
+            self._last_risk_mult = mult
+        # Clamp al espacio del WFO: params antiguos pueden traer risk_pct fuera
+        # de rango (p.ej. 0.139 heredado -> se clampea al rango por simbolo).
+        risk_pct = clamp_risk_pct(wfo_params.get('risk_pct', MAX_RISK), sym) * mult
+        # Peso de capital por simbolo: SOL opera con mas, BTC con menos.
+        # El WFO siempre optimiza a $250 fijo; el peso escala el capital real.
+        weight = get_allocation_weight(sym)
+        eff_balance = balance * weight
+        ideal_size = (eff_balance * risk_pct) / max(riesgo_real_pct, 0.001)
 
         # --- CAPS DE MARGEN (anti 'Libre: $2.01') ---
         # nocional <= balance*MAX_MARGIN_PER_TRADE_PCT*LEVERAGE (cap por trade)
@@ -721,7 +1215,7 @@ class LiveTrader:
         pos_size_usd = min(
             ideal_size,
             HARD_CAP_LIQUIDITY,
-            balance * MAX_MARGIN_PER_TRADE_PCT * LEVERAGE,
+            eff_balance * MAX_MARGIN_PER_TRADE_PCT * LEVERAGE,
             margin_available_under_total_cap * LEVERAGE
         )
 
@@ -781,11 +1275,14 @@ class LiveTrader:
             'entry_price': real_entry,
             'tp_price': tp_open,
             'sl_price': sl_open,
+            'peak_price': real_entry, # pico de ganancia para el trailing del gestor de salidas
             'size_usd': pos_size_usd,
             'margin': pos_size_usd / LEVERAGE, # margen comprometido (para caps y free_balance local)
             'amount': real_amount,
             'order_id': result['order_id'],
             'open_time': time.time(),
+            'open_block': int(time.time() // 900), # bloque 15m de apertura
+            'last_eval_block': int(time.time() // 900), # ultimo bloque 15m evaluado en salidas
             'candles_held': 0,
             'params': dict(wfo_params) # params WFO usados al abrir (reconstruccion de niveles)
         }
@@ -873,6 +1370,22 @@ class LiveTrader:
             'reason': reason,
             'time': time.time()
         })
+        daily = self._refresh_daily_risk_state()
+        daily['consecutive_losses'] = (daily.get('consecutive_losses', 0) + 1
+                                       if ganancia < 0 else 0)
+        # Racha por lado: alimenta el freno de entradas del lado castigado.
+        streak = self.state.setdefault('side_streak', {}).setdefault(sym, {})
+        streak[direction] = 0 if ganancia > 0 else streak.get(direction, 0) + 1
+        if streak[direction] == SIDE_LOSS_STREAK_BLOCK_AT:
+            logger.warning(f"[FRENO LADO] {sym} {direction}: {SIDE_LOSS_STREAK_BLOCK_AT} perdidas consecutivas; entradas de este lado pausadas hasta el proximo WFO aceptado.")
+            run_bg(send_telegram_alert(
+                f"🧯 *FRENO POR RACHA ({MODE_LABEL})*\n\n"
+                f"🔸 *Par:* `{sym}` `{direction}`\n"
+                f"🔸 *Racha:* `{SIDE_LOSS_STREAK_BLOCK_AT}` pérdidas consecutivas\n"
+                f"🔸 *Acción:* entradas de este lado en pausa hasta que el WFO acepte params nuevos"
+            ))
+        run_bg(record_trade(sym, direction, entry, close_price, pos.get('size_usd', 0.0),
+                            ganancia, reason, EXECUTION_MODE))
         
         self.sync_balance() # En PAPER recalcula el libre local; en TESTNET sincroniza con el exchange
         self.save_state()
@@ -992,6 +1505,7 @@ async def live_loop():
 
     last_ws_log = {} # Control de limite de logs cada 1 min por moneda
     last_stale_warn = {} # Throttle de warnings de precio stale: max 1/min por simbolo
+    last_params_stale_warn = {} # Throttle del aviso de params caducados: 1 por vela de 15m por simbolo
 
     while True:
         try:
@@ -1017,6 +1531,23 @@ async def live_loop():
 
                 for sym, res in wfo_results.items():
                     trader.state['wfo_data'][sym] = res
+                    trader.state.setdefault('wfo_disabled', {}).pop(sym, None)
+                    # Params nuevos aceptados: el freno por racha de este simbolo se reinicia.
+                    trader.state.get('side_streak', {}).pop(sym, None)
+                for sym in SYMBOLS:
+                    if sym not in wfo_results:
+                        if sym in trader.state['wfo_data']:
+                            # Rechazo OOS de los params NUEVOS: se conservan los ultimos
+                            # aceptados y el simbolo SIGUE operando (no se congela el trading).
+                            trader.state.setdefault('wfo_disabled', {}).pop(sym, None)
+                            logger.warning(f"WFO {sym}: params nuevos rechazados; se mantienen los anteriores y el simbolo sigue operativo.")
+                        else:
+                            # Sin params previos validos: no se pueden abrir entradas
+                            # (las salidas de posiciones abiertas NUNCA se bloquean).
+                            trader.state.setdefault('wfo_disabled', {})[sym] = {
+                                'block': current_15m_block,
+                                'reason': 'WFO sin doble validacion OOS o datos insuficientes'
+                            }
 
                 trader.state['last_wfo_block'] = current_15m_block
                 # last_wfo_time se mantiene solo como marca visible para Telegram/DB
@@ -1031,13 +1562,19 @@ async def live_loop():
                     if sym not in trader.state['wfo_data']: continue
 
                     df = get_historical_data(sym, limit=50) # 50 velas son suficientes para EMA20 y ATR14
-                    if df.empty or len(df) < 2: continue
+                    if df.empty or len(df) < 10: continue
 
                     latest = df.iloc[-2] # Usamos la vela cerrada anterior, no la actual fluctuante
                     c_atr = latest['ATR']
                     c_close = latest['close']
+                    c_high = latest['high']
+                    c_low = latest['low']
                     c_ema = latest['EMA20']
+                    c_adx = latest.get('ADX', 0.0)
+                    c_rsi = latest.get('RSI', 50.0)
                     best = trader.state['wfo_data'][sym]['params']
+                    macro_bullish = (len(df) >= 18) and (df['EMA20'].iloc[-2] >= df['EMA20'].iloc[-6]) and (df['EMA20'].iloc[-2] >= df['EMA20'].iloc[-18])
+                    macro_bearish = (len(df) >= 18) and (df['EMA20'].iloc[-2] <= df['EMA20'].iloc[-6]) and (df['EMA20'].iloc[-2] <= df['EMA20'].iloc[-18])
 
                     entry_l = c_close - (c_atr * best['grid_spacing_mult_l'])
                     entry_s = c_close + (c_atr * best['grid_spacing_mult_s'])
@@ -1053,7 +1590,14 @@ async def live_loop():
                     trader.state['wfo_data'][sym]['indicators'] = {
                         'atr': c_atr,
                         'ema20': c_ema,
+                        'adx': c_adx,
+                        'rsi': c_rsi,
+                        'macro_bullish': macro_bullish,
+                        'macro_bearish': macro_bearish,
                         'close': c_close,
+                        'high': c_high,
+                        'low': c_low,
+                        'er20': efficiency_ratio(df['close'].iloc[:-1].values),
                         'timestamp': str(latest.name)
                     }
                 trader.state['last_15m_block'] = current_15m_block
@@ -1092,7 +1636,13 @@ async def live_loop():
 
             # 3. Iterar cada simbolo para gestionar entradas y salidas
             for sym in SYMBOLS:
-                if sym not in trader.state['wfo_data']: continue
+                # wfo_disabled / wfo_data ausente bloquean SOLO las entradas nuevas.
+                # Las salidas (SL/TP/gestor) se procesan SIEMPRE: una posicion abierta
+                # nunca debe quedar sin vigilancia aunque el WFO rechace params nuevos.
+                wfo_sym_data = trader.state['wfo_data'].get(sym)
+                entries_blocked = (wfo_sym_data is None) or (sym in trader.state.get('wfo_disabled', {}))
+                if entries_blocked and not trader.state['positions'].get(sym):
+                    continue
 
                 # Binance stream symbols format for data payload 's' is UPPERCASE: BTCUSDT
                 ws_sym = sym.replace('/', '').upper()
@@ -1117,11 +1667,11 @@ async def live_loop():
                     continue
 
                 current_price = mark_data['mark_price']
-                targets = trader.state['wfo_data'][sym]['targets']
-                indicators = trader.state['wfo_data'][sym]['indicators']
+                targets = (wfo_sym_data or {}).get('targets') or {}
+                indicators = (wfo_sym_data or {}).get('indicators') or {}
 
                 # Log de seguimiento del precio para monitoreo activo (limitado a 1 vez por minuto)
-                if sym not in last_ws_log or time.time() - last_ws_log[sym] >= 60:
+                if targets and (sym not in last_ws_log or time.time() - last_ws_log[sym] >= 60):
                     logger.info(f"[{sym}] Precio WS: {current_price} | Objetivo LONG: {targets['long_entry']:.2f} | Objetivo SHORT: {targets['short_entry']:.2f}")
                     last_ws_log[sym] = time.time()
 
@@ -1133,15 +1683,14 @@ async def live_loop():
                         pos['current_price'] = current_price
                         pos['unrealized_pnl'] = (current_price - pos['entry_price']) * pos['amount']
 
-                        # Avanzar contador simulado de velas (1 vela = 15m = 900s).
-                        # El bucle corre cada ~0.5s; las velas se estiman por tiempo transcurrido.
-                        if time.time() - pos['open_time'] > (pos['candles_held'] + 1) * 900:
-                            pos['candles_held'] += 1
+                        # Avanzar contador de velas segun indice de bloque de 15m
+                        open_block = pos.get('open_block', current_15m_block)
+                        candles_held = max(0, current_15m_block - open_block)
+                        if pos.get('candles_held') != candles_held:
+                            pos['candles_held'] = candles_held
                             trader.save_state()
 
                         # INTEGRIDAD TP/SL: se usan SOLO los niveles guardados al abrir.
-                        # Si faltan (posicion legacy), se reconstruyen UNA VEZ desde los
-                        # params WFO guardados + entrada; si no se puede, cerrar y alertar.
                         sl_l = pos.get('sl_price')
                         tp_l = pos.get('tp_price')
                         if sl_l is None or tp_l is None:
@@ -1158,16 +1707,33 @@ async def live_loop():
                             else:
                                 sl_l, tp_l = rebuilt
 
-                        # ORDEN PESIMISTA (paridad con la simulacion): SL antes que TP.
-                        # Smart timeout SOLO en la vela 20 exacta; hard timeout desde la vela 40.
+                        # Evaluacion en tiempo real por tick para SL y TP clasicos
                         if sl_l is not None and current_price <= sl_l:
                             await trader.close_position(sym, 'LONG', current_price, 'STOP LOSS')
                         elif tp_l is not None and current_price >= tp_l:
                             await trader.close_position(sym, 'LONG', current_price, 'TAKE PROFIT')
-                        elif pos['candles_held'] == 20 and current_price <= indicators['ema20']:
-                            await trader.close_position(sym, 'LONG', current_price, 'SMART TIMEOUT (EMA CONTRA)')
-                        elif pos['candles_held'] >= 40:
-                            await trader.close_position(sym, 'LONG', current_price, 'HARD TIMEOUT')
+                        else:
+                            # Evaluacion de protective_exit, timeouts y actualizacion de peak_price alineados con limites de vela de 15m
+                            if pos.get('last_eval_block') != current_15m_block:
+                                c_close = indicators.get('close', current_price)
+                                c_ema = indicators.get('ema20')
+                                c_high = indicators.get('high', current_price)
+
+                                pe_price, pe_reason = protective_exit(
+                                    'LONG', pos['entry_price'], tp_l, sl_l,
+                                    pos.get('peak_price') or pos['entry_price'],
+                                    c_close, c_ema)
+
+                                if pe_price is not None:
+                                    await trader.close_position(sym, 'LONG', pe_price, pe_reason)
+                                elif candles_held == 20 and c_ema is not None and c_close <= c_ema:
+                                    await trader.close_position(sym, 'LONG', c_close, 'SMART TIMEOUT (EMA CONTRA)')
+                                elif candles_held >= 40:
+                                    await trader.close_position(sym, 'LONG', c_close, 'HARD TIMEOUT')
+                                else:
+                                    pos['peak_price'] = max(pos.get('peak_price') or pos['entry_price'], c_high)
+                                    pos['last_eval_block'] = current_15m_block
+                                    trader.save_state()
 
                     # SHORT EXITS
                     if 'SHORT' in trader.state['positions'].get(sym, {}):
@@ -1175,12 +1741,12 @@ async def live_loop():
                         pos['current_price'] = current_price
                         pos['unrealized_pnl'] = (pos['entry_price'] - current_price) * pos['amount']
 
-                        # El bucle corre cada ~0.5s; las velas se estiman por tiempo transcurrido.
-                        if time.time() - pos['open_time'] > (pos['candles_held'] + 1) * 900:
-                            pos['candles_held'] += 1
+                        open_block = pos.get('open_block', current_15m_block)
+                        candles_held = max(0, current_15m_block - open_block)
+                        if pos.get('candles_held') != candles_held:
+                            pos['candles_held'] = candles_held
                             trader.save_state()
 
-                        # INTEGRIDAD TP/SL (espejo del LONG): solo niveles guardados.
                         sl_s = pos.get('sl_price')
                         tp_s = pos.get('tp_price')
                         if sl_s is None or tp_s is None:
@@ -1197,18 +1763,46 @@ async def live_loop():
                             else:
                                 sl_s, tp_s = rebuilt
 
-                        # ORDEN PESIMISTA (paridad con la simulacion): SL antes que TP.
-                        # Smart timeout SOLO en la vela 20 exacta; hard timeout desde la vela 40.
+                        # Evaluacion en tiempo real por tick para SL y TP clasicos
                         if sl_s is not None and current_price >= sl_s:
                             await trader.close_position(sym, 'SHORT', current_price, 'STOP LOSS')
                         elif tp_s is not None and current_price <= tp_s:
                             await trader.close_position(sym, 'SHORT', current_price, 'TAKE PROFIT')
-                        elif pos['candles_held'] == 20 and current_price >= indicators['ema20']:
-                            await trader.close_position(sym, 'SHORT', current_price, 'SMART TIMEOUT (EMA CONTRA)')
-                        elif pos['candles_held'] >= 40:
-                            await trader.close_position(sym, 'SHORT', current_price, 'HARD TIMEOUT')
+                        else:
+                            # Evaluacion de protective_exit, timeouts y actualizacion de peak_price alineados con limites de vela de 15m
+                            if pos.get('last_eval_block') != current_15m_block:
+                                c_close = indicators.get('close', current_price)
+                                c_ema = indicators.get('ema20')
+                                c_low = indicators.get('low', current_price)
+
+                                pe_price, pe_reason = protective_exit(
+                                    'SHORT', pos['entry_price'], tp_s, sl_s,
+                                    pos.get('peak_price') or pos['entry_price'],
+                                    c_close, c_ema)
+
+                                if pe_price is not None:
+                                    await trader.close_position(sym, 'SHORT', pe_price, pe_reason)
+                                elif candles_held == 20 and c_ema is not None and c_close >= c_ema:
+                                    await trader.close_position(sym, 'SHORT', c_close, 'SMART TIMEOUT (EMA CONTRA)')
+                                elif candles_held >= 40:
+                                    await trader.close_position(sym, 'SHORT', c_close, 'HARD TIMEOUT')
+                                else:
+                                    pos['peak_price'] = min(pos.get('peak_price') or pos['entry_price'], c_low)
+                                    pos['last_eval_block'] = current_15m_block
+                                    trader.save_state()
 
                 # --- CHECK NEW ENTRIES ---
+                if entries_blocked:
+                    continue  # Sin params WFO aceptados: se gestionan salidas, pero no se abren entradas nuevas.
+                if indicators.get('adx', 0.0) > MAX_ADX_FOR_GRID:
+                    continue  # En tendencia fuerte se gestionan salidas, no se abre grid.
+                if indicators.get('er20', 0.0) > get_er_max(sym):
+                    continue  # Mercado direccional (Kaufman ER alto): el grid no abre, solo gestiona salidas.
+                if params_are_stale(trader.state['wfo_data'].get(sym), time.time()):
+                    if last_params_stale_warn.get(sym) != current_15m_block:
+                        last_params_stale_warn[sym] = current_15m_block
+                        logger.warning(f"[PARAMS CADUCADOS] {sym}: sin WFO aceptado en >{STALE_PARAMS_MAX_AGE_H}h; entradas pausadas hasta validar edge fresco.")
+                    continue
                 # Cooldowns: SOLO por fallos de apertura (60s, escalado a 15 min tras 3 fallos).
                 can_enter = True
                 if sym in trader.state.get('cooldowns', {}):
@@ -1219,8 +1813,7 @@ async def live_loop():
 
                 # ANTI-CHURN (paridad real con la simulacion): tras cerrar una posicion,
                 # no se permite re-entrar en ese (simbolo, direccion) hasta que avance
-                # el bloque de 15m. La simulacion nunca re-entra dentro de la misma vela;
-                # esto la replica y corta el sangrado de fees por churn.
+                # el bloque de 15m.
                 last_close = trader.state.get('last_close_block', {}).get(sym, {})
                 long_churn_blocked = current_15m_block <= last_close.get('LONG', -1)
                 short_churn_blocked = current_15m_block <= last_close.get('SHORT', -1)
@@ -1229,16 +1822,30 @@ async def live_loop():
                 has_long = sym in trader.state['positions'] and 'LONG' in trader.state['positions'][sym]
                 has_short = sym in trader.state['positions'] and 'SHORT' in trader.state['positions'][sym]
 
-                if can_enter and not has_long and not long_churn_blocked and current_price <= targets['long_entry'] and current_price > targets['long_sl']:
+                # FRENO POR RACHA DEL LADO
+                side_streaks = trader.state.get('side_streak', {}).get(sym, {})
+                long_streak_blocked = side_streaks.get('LONG', 0) >= SIDE_LOSS_STREAK_BLOCK_AT
+                short_streak_blocked = side_streaks.get('SHORT', 0) >= SIDE_LOSS_STREAK_BLOCK_AT
+
+                # ALINEACION MTF: Prevenir entradas contra-tendencia macro
+                macro_bullish = indicators.get('macro_bullish', False)
+                macro_bearish = indicators.get('macro_bearish', False)
+
+                # FILTRO RSI: LONG solo en dip, SHORT solo en rally (umbrales por simbolo)
+                c_rsi = indicators.get('rsi', 50.0)
+                long_rsi_ok = (not RSI_FILTER) or c_rsi <= get_rsi_long_max(sym)
+                short_rsi_ok = (not RSI_FILTER) or c_rsi >= get_rsi_short_min(sym)
+
+                # FILTRO VOLUMEN: evita velas sin interes o con panico
+                rel_vol = indicators.get('rel_vol', 1.0)
+                vol_ok = (not VOL_FILTER) or (VOL_MIN <= rel_vol <= VOL_MAX)
+
+                if can_enter and not has_long and not long_churn_blocked and not long_streak_blocked and not macro_bearish and long_rsi_ok and vol_ok and current_price <= targets['long_entry'] and current_price > targets['long_sl']:
                     await trader.open_position(sym, 'LONG', current_price)
 
-                if can_enter and not has_short and not short_churn_blocked and current_price >= targets['short_entry'] and current_price < targets['short_sl']:
+                if can_enter and not has_short and not short_churn_blocked and not short_streak_blocked and not macro_bullish and short_rsi_ok and vol_ok and current_price >= targets['short_entry'] and current_price < targets['short_sl']:
                     await trader.open_position(sym, 'SHORT', current_price)
 
-            # Guardar en SQLite cada 5 segundos para que Telegram vea PnL en tiempo real
-            if 'last_db_update' not in trader.state: trader.state['last_db_update'] = 0
-            if time.time() - trader.state['last_db_update'] > 5:
-                trader.state['last_db_update'] = time.time()
                 run_bg(update_bot_state(STATUS_RUNNING, trader.state['balance'], trader.state.get('free_balance', 0.0), trader.state['positions'], trader.state.get('last_wfo_time', "")))
 
             # Reset sleep time on success

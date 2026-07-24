@@ -1,0 +1,93 @@
+2026-07-23 22:41:47,651 - bot_main - INFO - EXECUTION_MODE=paper: exchange de datos MAINNET PUBLICO (sin API keys, sin ordenes reales).
+2026-07-23 22:41:47,651 - bot_main - INFO - EXECUTION_MODE=paper: exchange de datos MAINNET PUBLICO (sin API keys, sin ordenes reales).
+
+Proyectando 20 dias en 3 simbolos en paralelo (4h entre WFO, 150 trials)...
+2026-07-23 22:41:50,840 - bot_main - INFO - EXECUTION_MODE=paper: exchange de datos MAINNET PUBLICO (sin API keys, sin ordenes reales).
+2026-07-23 22:41:50,840 - bot_main - INFO - EXECUTION_MODE=paper: exchange de datos MAINNET PUBLICO (sin API keys, sin ordenes reales).
+2026-07-23 22:41:50,940 - bot_main - INFO - EXECUTION_MODE=paper: exchange de datos MAINNET PUBLICO (sin API keys, sin ordenes reales).
+2026-07-23 22:41:50,940 - bot_main - INFO - EXECUTION_MODE=paper: exchange de datos MAINNET PUBLICO (sin API keys, sin ordenes reales).
+2026-07-23 22:41:51,046 - bot_main - INFO - EXECUTION_MODE=paper: exchange de datos MAINNET PUBLICO (sin API keys, sin ordenes reales).
+2026-07-23 22:41:51,046 - bot_main - INFO - EXECUTION_MODE=paper: exchange de datos MAINNET PUBLICO (sin API keys, sin ordenes reales).
+  BTC/USDT terminado (19 ventanas)
+  ETH/USDT terminado (19 ventanas)
+  SOL/USDT terminado (19 ventanas)
+
+=== BTC/USDT (20 dias, walk-forward cada 4h) ===
+PnL total: -30.11 USD | trades: 34 | PF: 0.10 | Max DD: 13.40% | WFO aceptados: 2/19 (10.5%)
+Por dia -> mejor: +2.90 | peor: -11.27 | dias en positivo: 2/19
+   2026-07-03: +0.00
+   2026-07-04: +0.00
+   2026-07-05: +0.00
+   2026-07-06: +0.00
+   2026-07-07: +0.00
+   2026-07-08: +0.00
+   2026-07-09: +0.00
+   2026-07-10: -6.12
+   2026-07-11: -7.24
+   2026-07-12: -8.87
+   2026-07-13: -11.27
+   2026-07-14: +0.50
+   2026-07-15: +2.90
+   2026-07-16: +0.00
+   2026-07-17: +0.00
+   2026-07-18: +0.00
+   2026-07-19: +0.00
+   2026-07-20: +0.00
+   2026-07-21: +0.00
+
+=== ETH/USDT (20 dias, walk-forward cada 4h) ===
+PnL total: -50.03 USD | trades: 57 | PF: 0.37 | Max DD: 26.60% | WFO aceptados: 7/19 (36.8%)
+Por dia -> mejor: +9.15 | peor: -15.36 | dias en positivo: 6/19
+   2026-07-03: +0.00
+   2026-07-04: +0.00
+   2026-07-05: +0.00
+   2026-07-06: +0.00
+   2026-07-07: +0.00
+   2026-07-08: -6.59
+   2026-07-09: -14.76
+   2026-07-10: -6.02
+   2026-07-11: +2.60
+   2026-07-12: -15.36
+   2026-07-13: -2.96
+   2026-07-14: -14.05
+   2026-07-15: +8.73
+   2026-07-16: -10.63
+   2026-07-17: +2.01
+   2026-07-18: -9.47
+   2026-07-19: +9.15
+   2026-07-20: +6.82
+   2026-07-21: +0.49
+
+=== SOL/USDT (20 dias, walk-forward cada 4h) ===
+PnL total: -51.88 USD | trades: 136 | PF: 0.49 | Max DD: 25.55% | WFO aceptados: 9/19 (47.4%)
+Por dia -> mejor: +12.27 | peor: -18.82 | dias en positivo: 7/19
+   2026-07-03: +2.95
+   2026-07-04: -9.93
+   2026-07-05: -0.41
+   2026-07-06: +12.27
+   2026-07-07: -17.21
+   2026-07-08: +7.88
+   2026-07-09: +2.66
+   2026-07-10: -14.06
+   2026-07-11: -6.08
+   2026-07-12: -10.34
+   2026-07-13: -3.44
+   2026-07-14: +10.37
+   2026-07-15: -18.82
+   2026-07-16: -16.10
+   2026-07-17: +10.32
+   2026-07-18: +0.00
+   2026-07-19: +0.00
+   2026-07-20: -5.89
+   2026-07-21: +3.93
+
+============================================================
+RESUMEN DE PORTAFOLIO DE 20 DIAS (3 SIMBOLOS)
+============================================================
+Capital Inicial: $750.00 USD ($250 por símbolo)
+PnL Total Portafolio: -132.02 USD
+ROI Proyectado (20 días): -17.60%
+Max Drawdown Portafolio: 20.44%
+Total Trades: 227
+Profit Factor Portafolio: 0.39
+============================================================

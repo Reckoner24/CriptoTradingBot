@@ -12,6 +12,7 @@ load_dotenv()
 TELEGRAM_BOT_API = os.getenv("TELEGRAM_BOT_API", "")
 TELEGRAM_ID = os.getenv("TELEGRAM_ID", "")
 API_URL = "http://127.0.0.1:8000"
+BOT_LEVERAGE = os.getenv("BOT_LEVERAGE", "3")  # etiqueta informativa en /portafolio
 
 # --- WATCHDOG ---
 WATCHDOG_INTERVAL_SECONDS = 60      # chequeo cada 60s
@@ -139,8 +140,17 @@ async def watchdog_loop(app):
             alarm_reason = ""
 
 async def post_init(app):
-    # Lanzar el watchdog en segundo plano cuando arranca la aplicación
+    # UNA SOLA post_init: antes existian dos definiciones y la segunda
+    # (set_my_commands) tapaba a esta, dejando el watchdog sin arrancar.
+    # 1) Lanzar el watchdog en segundo plano cuando arranca la aplicación.
     app.create_task(watchdog_loop(app))
+    # 2) Registrar los comandos visibles en el menú de Telegram.
+    await app.bot.set_my_commands([
+        ("start", "Inicia el bot y verifica seguridad"),
+        ("status", "Muestra el estado general del bot"),
+        ("posiciones", "Muestra las posiciones abiertas actuales"),
+        ("portafolio", "Muestra el balance y pnl flotante")
+    ])
 
 # --- COMANDOS DEL BOT ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -257,22 +267,39 @@ async def portafolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
                 icono = "🟢" if d_name == "LONG" else "🔴"
                 pnl_icon = "📈" if pnl >= 0 else "📉"
 
+                pnl_pct = (pnl / size * 100) if size else 0.0
+
                 details += (
                     f"{icono} *{sym}* ({d_name})\n"
-                    f"   Tamaño Apalancado (3x): `${size:,.2f}`\n"
+                    f"   Tamaño Apalancado ({BOT_LEVERAGE}x): `${size:,.2f}`\n"
                     f"   Entrada: `${entry:,.4f}`\n"
                     f"   Actual: `${current:,.4f}`\n"
-                    f"   PnL: {pnl_icon} *${pnl:,.2f}*\n\n"
+                    f"   PnL: {pnl_icon} *${pnl:,.2f}* (`{pnl_pct:+.2f}%`)\n\n"
                 )
 
         if details == "":
             details = "✅ No hay posiciones activas.\n"
 
+        # PnL realizado reciente (ledger de cierres locales, via /metrics).
+        # Se muestra solo si hay cierres registrados; profit_factor puede ser None.
+        realized_line = ""
+        metrics = await fetch_api("/metrics")
+        if metrics.get("status") == "success":
+            md = metrics.get("data") or {}
+            if md.get("trades"):
+                pf = md.get("profit_factor")
+                pf_txt = f"{pf:.2f}" if pf is not None else "∞"
+                realized_line = (
+                    f"📒 *Realizado (últimos {md['trades']} cierres):* "
+                    f"`${md.get('net_pnl', 0.0):,.2f}` | WR `{md.get('win_rate', 0.0) * 100:.0f}%` | PF `{pf_txt}`\n"
+                )
+
         msg = (
             "💼 *Portafolio Actual*\n"
             f"💰 *Balance Billetera:* `${balance_total:,.2f}` USDT\n"
             f"🔓 *Margen Libre:* `${free_balance:,.2f}` USDT\n"
-            f"⚖️ *PnL Flotante Total:* *${global_pnl:,.2f}* USDT\n\n"
+            f"⚖️ *PnL Flotante Total:* *${global_pnl:,.2f}* USDT\n"
+            f"{realized_line}\n"
             f"📊 *Distribución de Activos:*\n"
             f"{details}"
         )
@@ -282,14 +309,6 @@ async def portafolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_text(msg, parse_mode="Markdown")
 
 # --- BUCLE PRINCIPAL ---
-async def post_init(application):
-    await application.bot.set_my_commands([
-        ("start", "Inicia el bot y verifica seguridad"),
-        ("status", "Muestra el estado general del bot"),
-        ("posiciones", "Muestra las posiciones abiertas actuales"),
-        ("portafolio", "Muestra el balance y pnl flotante")
-    ])
-
 def main():
     if not TELEGRAM_BOT_API:
         logger.error("No se encontró TELEGRAM_BOT_API en el archivo .env")

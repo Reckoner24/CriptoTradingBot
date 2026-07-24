@@ -2,7 +2,9 @@ class context:
     def __init__(self):
         self.SYMBOL = "BTCUSDT"
         self.TIMEFRAME = "15m"
-        self.LEVERAGE = 3
+        self.LEVERAGE = 5
+        self.MAX_MARGIN_PER_TRADE_PCT = 0.30
+        self.MAX_TOTAL_MARGIN_PCT = 0.85
         self.RISK_PER_TRADE_PCT = 0.01
         self.KELLY_FRACTION = 0.25
         self.ATR_PERIOD = 14

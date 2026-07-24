@@ -1,142 +1,118 @@
 {
-  "generado_utc": "2026-07-19T08:40:15.606154+00:00",
+  "generado_utc": "2026-07-24T06:10:15.753489+00:00",
   "resultados": {
     "BTC/USDT": {
       "ventana": [
-        "2026-07-18 08:45:00",
-        "2026-07-19 08:30:00"
+        "2026-07-23 06:15:00",
+        "2026-07-24 06:00:00"
       ],
-      "reporte__params_reporte": {
-        "capital": 253.27839654091943,
-        "trades": 25
-      },
-      "reporte__params_live": {
-        "capital": 201.2815604990946,
-        "trades": 47
-      },
       "live__params_live": {
-        "capital": 248.77952924181128,
-        "trades": 47
+        "capital": 250.68170718895783,
+        "trades": 3
       },
       "live__params_reporte": {
-        "capital": 250.11546312540995,
-        "trades": 25
+        "capital": 246.30103865932324,
+        "trades": 5
       },
       "live_sin_caps__params_live": {
-        "capital": 201.28156049909646,
-        "trades": 47
+        "capital": 251.2840424274586,
+        "trades": 3
       },
       "params_reporte": {
-        "grid_spacing_mult_l": 0.7264812611581843,
-        "tp_mult_l": 0.8643843145115478,
-        "sl_mult_l": 2.1925313269024613,
-        "grid_spacing_mult_s": 2.013465546451971,
-        "tp_mult_s": 0.8817041850954903,
-        "sl_mult_s": 1.3607541370814795,
-        "risk_pct": 0.11312949605985789
+        "grid_spacing_mult_l": 1.098705069389527,
+        "tp_mult_l": 2.3421877605270036,
+        "sl_mult_l": 0.7020904388935252,
+        "grid_spacing_mult_s": 1.1308364604824068,
+        "tp_mult_s": 3.0773423877345563,
+        "sl_mult_s": 0.5260081667921872,
+        "risk_pct": 0.09126530340188749
       },
       "params_live": {
-        "grid_spacing_mult_l": 0.7886422525923278,
-        "tp_mult_l": 0.9915777444007196,
-        "sl_mult_l": 2.2478735249755357,
-        "grid_spacing_mult_s": 0.6166879374230737,
-        "tp_mult_s": 0.9725122966466454,
-        "sl_mult_s": 2.8148712980080046,
-        "risk_pct": 0.1979600576042665
+        "grid_spacing_mult_l": 1.1776102781933182,
+        "tp_mult_l": 2.705555999998836,
+        "sl_mult_l": 0.5602673842168799,
+        "grid_spacing_mult_s": 1.4841788969194134,
+        "tp_mult_s": 2.6086095134557543,
+        "sl_mult_s": 0.559700399081472,
+        "risk_pct": 0.09654962931290825
       }
     },
     "ETH/USDT": {
       "ventana": [
-        "2026-07-18 08:45:00",
-        "2026-07-19 08:30:00"
+        "2026-07-23 06:15:00",
+        "2026-07-24 06:00:00"
       ],
-      "reporte__params_reporte": {
-        "capital": 183.0954970454466,
-        "trades": 7
-      },
-      "reporte__params_live": {
-        "capital": 232.49274968638446,
-        "trades": 41
-      },
       "live__params_live": {
-        "capital": 250.748992227925,
-        "trades": 41
+        "capital": 240.7198394856629,
+        "trades": 4
       },
       "live__params_reporte": {
-        "capital": 248.2459703310566,
-        "trades": 7
+        "capital": 237.67465180526224,
+        "trades": 5
       },
       "live_sin_caps__params_live": {
-        "capital": 232.49274968638503,
-        "trades": 41
+        "capital": 229.67940313118066,
+        "trades": 4
       },
       "params_reporte": {
-        "grid_spacing_mult_l": 0.9797192487472266,
-        "tp_mult_l": 0.9442549967674205,
-        "sl_mult_l": 1.629081841244851,
-        "grid_spacing_mult_s": 2.4003954698467727,
-        "tp_mult_s": 0.7400955145818923,
-        "sl_mult_s": 1.2740877795313186,
-        "risk_pct": 0.1989288477550563
+        "grid_spacing_mult_l": 0.6486266305504976,
+        "tp_mult_l": 2.670656564817908,
+        "sl_mult_l": 1.1201630294591292,
+        "grid_spacing_mult_s": 1.3251865968770757,
+        "tp_mult_s": 2.4271894732378785,
+        "sl_mult_s": 0.5030592214668457,
+        "risk_pct": 0.06523135498438981
       },
       "params_live": {
-        "grid_spacing_mult_l": 0.84344380989129,
-        "tp_mult_l": 0.9751046173208726,
-        "sl_mult_l": 3.8387614361268128,
-        "grid_spacing_mult_s": 0.5816283482942635,
-        "tp_mult_s": 0.9637654667268125,
-        "sl_mult_s": 2.5032251111751997,
-        "risk_pct": 0.1707767578612695
+        "grid_spacing_mult_l": 0.9319637851469286,
+        "tp_mult_l": 2.944750911788169,
+        "sl_mult_l": 0.6992995701712258,
+        "grid_spacing_mult_s": 1.428363566508556,
+        "tp_mult_s": 2.2126833337019565,
+        "sl_mult_s": 0.5328523269499026,
+        "risk_pct": 0.07903948437163714
       }
     },
     "SOL/USDT": {
       "ventana": [
-        "2026-07-18 08:45:00",
-        "2026-07-19 08:30:00"
+        "2026-07-23 06:15:00",
+        "2026-07-24 06:00:00"
       ],
-      "reporte__params_reporte": {
-        "capital": 359.9065262900262,
-        "trades": 14
-      },
-      "reporte__params_live": {
-        "capital": 345.5312782512564,
-        "trades": 36
-      },
       "live__params_live": {
-        "capital": 254.91091119681406,
-        "trades": 36
+        "capital": 253.67478149788784,
+        "trades": 3
       },
       "live__params_reporte": {
-        "capital": 253.47116708839195,
-        "trades": 15
+        "capital": 248.30930705281358,
+        "trades": 2
       },
       "live_sin_caps__params_live": {
-        "capital": 345.5312782512561,
-        "trades": 36
+        "capital": 257.85868305742974,
+        "trades": 3
       },
       "params_reporte": {
-        "grid_spacing_mult_l": 1.0275488935440311,
-        "tp_mult_l": 0.973272561349148,
-        "sl_mult_l": 1.2985097660144707,
-        "grid_spacing_mult_s": 1.4203546028724943,
-        "tp_mult_s": 1.0068459871054918,
-        "sl_mult_s": 2.3221714407341953,
-        "risk_pct": 0.16073598397978545
+        "grid_spacing_mult_l": 1.1666720638949422,
+        "tp_mult_l": 2.9330277456256764,
+        "sl_mult_l": 0.5964834284096728,
+        "grid_spacing_mult_s": 1.3009183733909928,
+        "tp_mult_s": 2.8221730380660524,
+        "sl_mult_s": 1.0501782638504908,
+        "risk_pct": 0.06923935457791769
       },
       "params_live": {
-        "grid_spacing_mult_l": 1.0061939414629435,
-        "tp_mult_l": 0.926046334323163,
-        "sl_mult_l": 3.4777655489599972,
-        "grid_spacing_mult_s": 0.6859712322747918,
-        "tp_mult_s": 0.9153998960337235,
-        "sl_mult_s": 3.696909382682575,
-        "risk_pct": 0.16605393817326264
+        "grid_spacing_mult_l": 1.1863228456699315,
+        "tp_mult_l": 3.199925225378388,
+        "sl_mult_l": 1.0822662822707965,
+        "grid_spacing_mult_s": 1.096178363869541,
+        "tp_mult_s": 2.924851224624829,
+        "sl_mult_s": 1.041702227256337,
+        "risk_pct": 0.08461766523173268
       }
     }
   },
   "bot_real_24h": {
-    "n_trades": 59,
-    "pnl_total": -22.034981748479165,
-    "balance_actual": 296.19589106611505
+    "n_trades": 40,
+    "pnl_total": -3.1999999999999673,
+    "balance_actual": 215.87068509863678
   }
 }

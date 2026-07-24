@@ -1,0 +1,147 @@
+{
+  "generated_at": "2026-07-24T00:09:09.209519",
+  "params": {
+    "warmup": 960,
+    "step": 96,
+    "vbars": 192,
+    "trials": 15,
+    "days": 5
+  },
+  "configs": {
+    "A": {
+      "name": "A_baseline",
+      "label": "A (baseline pre-plan: trades>=1, sl[0.5,1.4], sin RSI, sin vol, uniforme)",
+      "per_symbol": false,
+      "trades_min": 1,
+      "pf_min": 1.05,
+      "dd_max": 0.25,
+      "rsi_filter": false,
+      "rsi_long_max": 45.0,
+      "rsi_short_min": 55.0,
+      "vol_filter": false,
+      "vol_min": 0.5,
+      "vol_max": 3.0,
+      "sl_mult_range": [
+        0.5,
+        1.4
+      ]
+    },
+    "B": {
+      "name": "B_actual",
+      "label": "B (config actual: por s\u00edmbolo + RSI + trades>=2)",
+      "per_symbol": true,
+      "rsi_filter": true,
+      "vol_filter": false,
+      "vol_min": 0.5,
+      "vol_max": 3.0
+    }
+  },
+  "results": {
+    "BTC/USDT": {
+      "A": {
+        "pnl": 0.0,
+        "trades": 0,
+        "pf": null,
+        "max_dd_pct": 0.0,
+        "wfo_ok": 0,
+        "wfo_total": 5,
+        "wfo_rate_pct": 0.0,
+        "pos_days": 0,
+        "n_days": 5,
+        "best_day": 0.0,
+        "worst_day": 0.0
+      },
+      "B": {
+        "pnl": -15.40246639687669,
+        "trades": 14,
+        "pf": 0.05320976973488269,
+        "max_dd_pct": 6.507235036662235,
+        "wfo_ok": 3,
+        "wfo_total": 5,
+        "wfo_rate_pct": 60.0,
+        "pos_days": 1,
+        "n_days": 5,
+        "best_day": 0.8656211947788961,
+        "worst_day": -8.772645154647705
+      }
+    },
+    "ETH/USDT": {
+      "A": {
+        "pnl": -17.38124222792385,
+        "trades": 24,
+        "pf": 0.40531470764914707,
+        "max_dd_pct": 6.657466492650434,
+        "wfo_ok": 4,
+        "wfo_total": 5,
+        "wfo_rate_pct": 80.0,
+        "pos_days": 1,
+        "n_days": 5,
+        "best_day": 11.846388674488395,
+        "worst_day": -12.18511968147655
+      },
+      "B": {
+        "pnl": -4.712819638468574,
+        "trades": 10,
+        "pf": 0.4950027245454417,
+        "max_dd_pct": 2.2715714064094032,
+        "wfo_ok": 5,
+        "wfo_total": 5,
+        "wfo_rate_pct": 100.0,
+        "pos_days": 2,
+        "n_days": 5,
+        "best_day": 3.0076898648650285,
+        "worst_day": -4.692859006694988
+      }
+    },
+    "SOL/USDT": {
+      "A": {
+        "pnl": 14.083805652010426,
+        "trades": 3,
+        "pf": null,
+        "max_dd_pct": 0.0,
+        "wfo_ok": 1,
+        "wfo_total": 5,
+        "wfo_rate_pct": 20.0,
+        "pos_days": 1,
+        "n_days": 5,
+        "best_day": 14.083805652010426,
+        "worst_day": 0.0
+      },
+      "B": {
+        "pnl": 13.480311032325517,
+        "trades": 2,
+        "pf": null,
+        "max_dd_pct": 0.0,
+        "wfo_ok": 1,
+        "wfo_total": 5,
+        "wfo_rate_pct": 20.0,
+        "pos_days": 1,
+        "n_days": 5,
+        "best_day": 13.480311032325517,
+        "worst_day": 0.0
+      }
+    }
+  },
+  "portfolio": {
+    "A": {
+      "pnl": -3.297436575913423,
+      "trades": 27,
+      "wins": 14.083805652010426,
+      "losses": 17.38124222792385,
+      "wfo_ok": 5,
+      "wfo_total": 15,
+      "pos_days": 2,
+      "n_days": 15
+    },
+    "B": {
+      "pnl": -6.634975003019747,
+      "trades": 26,
+      "wins": 13.480311032325517,
+      "losses": 20.115286035345264,
+      "wfo_ok": 9,
+      "wfo_total": 15,
+      "pos_days": 4,
+      "n_days": 15
+    }
+  }
+}

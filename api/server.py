@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timezone
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.database import get_latest_state
+from core.database import get_latest_state, get_trade_metrics
 
 app = FastAPI(title="Cripto Trading Bot - Status API", version="1.0.0")
 
@@ -88,3 +88,12 @@ async def get_positions():
             "open_positions": state["open_positions"]
         }
     return {"status": "waiting", "message": "No hay posiciones registradas"}
+
+
+@app.get("/metrics")
+async def get_metrics():
+    """Métricas de los últimos cierres guardados en el ledger local."""
+    metrics = await get_trade_metrics()
+    if metrics is None:
+        return {"status": "error", "message": "No se pudieron leer las métricas"}
+    return {"status": "success", "data": metrics}

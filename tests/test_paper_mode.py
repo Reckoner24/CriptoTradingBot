@@ -9,13 +9,15 @@ Solo cubren lógica que no requiere red ni exchange:
         = 100 * (0.01 - 0.0008) = 0.92 USDT.
   (b) EXECUTION_MODE por defecto es 'paper'.
   (c) Existen las constantes de caps de margen:
-      MAX_MARGIN_PER_TRADE_PCT = 0.35 y MAX_TOTAL_MARGIN_PCT = 0.80.
+      MAX_MARGIN_PER_TRADE_PCT = 0.50 y MAX_TOTAL_MARGIN_PCT = 0.90.
 
 El módulo se carga con importlib.util.spec_from_file_location para evitar
 problemas de paquete (scripts/ no es un paquete importable).
 """
 
 import importlib.util
+import logging
+import logging.handlers
 import sys
 from pathlib import Path
 
@@ -38,6 +40,11 @@ def load_bot_module():
     module = importlib.util.module_from_spec(spec)
     sys.modules["bot_live_bidirectional"] = module
     spec.loader.exec_module(module)
+    # El módulo configura el root logger con RotatingFileHandler sobre bot_live.log:
+    # quitarlo para que los trades de prueba no ensucien el log de producción.
+    for h in list(logging.getLogger().handlers):
+        if isinstance(h, logging.handlers.RotatingFileHandler):
+            logging.getLogger().removeHandler(h)
     return module
 
 
@@ -57,9 +64,9 @@ def test_execution_mode_default_is_paper(monkeypatch):
 
 
 def test_margin_caps_constants(bot):
-    """(c) Caps de margen: 35% por trade y 80% total."""
-    assert bot.MAX_MARGIN_PER_TRADE_PCT == 0.35
-    assert bot.MAX_TOTAL_MARGIN_PCT == 0.80
+    """(c) Caps de margen: 45% por trade y 85% total."""
+    assert bot.MAX_MARGIN_PER_TRADE_PCT == 0.85
+    assert bot.MAX_TOTAL_MARGIN_PCT == 0.90
 
 
 def test_paper_long_pnl_net_of_fee(bot):

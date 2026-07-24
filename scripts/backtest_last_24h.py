@@ -32,6 +32,16 @@ import pandas_ta as ta
 # scripts/ no es paquete: al ejecutar como script, scripts/ queda en sys.path.
 from parity_check_24h import run_live_engine, LEVERAGE_LIVE
 
+# Receta de seleccion del bot live (guarda de geometria TP >= SL en ATR).
+# Al importar el bot se anade un RotatingFileHandler sobre bot_live.log al root
+# logger: se retira para no ensuciar el log de produccion con este reporte.
+import logging
+import logging.handlers
+from bot_live_bidirectional import grid_geometry_ok
+for _h in list(logging.getLogger().handlers):
+    if isinstance(_h, logging.handlers.RotatingFileHandler):
+        logging.getLogger().removeHandler(_h)
+
 warnings.filterwarnings('ignore')
 optuna.logging.set_verbosity(optuna.logging.WARNING)
 
@@ -52,120 +62,20 @@ def prepare_data(df):
     df = df.copy()
     df['ATR'] = ta.atr(df['high'], df['low'], df['close'], length=14)
     df['EMA20'] = ta.ema(df['close'], length=20)
+    adx = ta.adx(df['high'], df['low'], df['close'], length=14)
+    df['ADX'] = adx['ADX_14'] if adx is not None else 0.0
     df.fillna(0, inplace=True)
     return df
 
 
 def run_realworld_backtest(df, start_idx, end_idx, initial_capital, params):
-    COM = 0.0004
-    capital = initial_capital
-    df_eval = df.iloc[start_idx:end_idx]
-    if len(df_eval) <= 40: return capital, [], 0
-
-    close = df_eval['close'].values
-    high = df_eval['high'].values
-    low = df_eval['low'].values
-    atr = df_eval['ATR'].values
-    ema20 = df_eval['EMA20'].values
-    timestamps = df_eval.index
-
-    n = len(df_eval)
-    i = 0
-    equity_updates = []
-    trade_count = 0
-
-    grid_spacing_mult_l = params['grid_spacing_mult_l']
-    tp_mult_l = params['tp_mult_l']
-    sl_mult_l = params['sl_mult_l']
-
-    grid_spacing_mult_s = params['grid_spacing_mult_s']
-    tp_mult_s = params['tp_mult_s']
-    sl_mult_s = params['sl_mult_s']
-
-    risk_per_trade = params['risk_pct']
-    HARD_CAP_LIQUIDITY = 10000.0
-
-    while i < n - 1:
-        if capital <= 10: break
-
-        current_atr = atr[i]
-
-        spacing_l = current_atr * grid_spacing_mult_l
-        entry_long = close[i] - spacing_l
-        sl_long = entry_long - (current_atr * sl_mult_l)
-        tp_long = entry_long + (spacing_l * tp_mult_l)
-
-        spacing_s = current_atr * grid_spacing_mult_s
-        entry_short = close[i] + spacing_s
-        sl_short = entry_short + (current_atr * sl_mult_s)
-        tp_short = entry_short - (spacing_s * tp_mult_s)
-
-        long_active = False; short_active = False
-        salida_l = None; salida_s = None
-        exit_idx_l = i; exit_idx_s = i
-
-        for j in range(1, 41):
-            if i+j >= n: break
-            curr_h = high[i+j]; curr_l = low[i+j]; curr_c = close[i+j]
-
-            if not long_active:
-                if curr_l <= entry_long:
-                    long_active = True
-                    if curr_h >= tp_long and curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
-                    elif curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
-                    elif curr_h >= tp_long: salida_l = tp_long; exit_idx_l = i+j
-            else:
-                if salida_l is None:
-                    if curr_h >= tp_long and curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
-                    elif curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
-                    elif curr_h >= tp_long: salida_l = tp_long; exit_idx_l = i+j
-                    elif j == 20:
-                        if curr_c <= ema20[i+j]: salida_l = curr_c; exit_idx_l = i+j
-                    elif j == 40: salida_l = curr_c; exit_idx_l = i+j
-
-            if not short_active:
-                if curr_h >= entry_short:
-                    short_active = True
-                    if curr_l <= tp_short and curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
-                    elif curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
-                    elif curr_l <= tp_short: salida_s = tp_short; exit_idx_s = i+j
-            else:
-                if salida_s is None:
-                    if curr_l <= tp_short and curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
-                    elif curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
-                    elif curr_l <= tp_short: salida_s = tp_short; exit_idx_s = i+j
-                    elif j == 20:
-                        if curr_c >= ema20[i+j]: salida_s = curr_c; exit_idx_s = i+j
-                    elif j == 40: salida_s = curr_c; exit_idx_s = i+j
-
-            if (not long_active or salida_l is not None) and (not short_active or salida_s is not None): break
-
-        if long_active and salida_l is not None:
-            pnl_pct = (salida_l - entry_long) / entry_long - COM * 2
-            riesgo_real_pct = abs(entry_long - sl_long) / entry_long
-            pos_size = (capital * risk_per_trade) / max(riesgo_real_pct, 0.001)
-            if pos_size > HARD_CAP_LIQUIDITY: pos_size = HARD_CAP_LIQUIDITY
-            ganancia = pos_size * pnl_pct
-            capital += ganancia
-            equity_updates.append({'time': timestamps[exit_idx_l], 'pnl': ganancia, 'dir': 'L'})
-            trade_count += 1
-
-        if short_active and salida_s is not None:
-            pnl_pct = (entry_short - salida_s) / entry_short - COM * 2
-            riesgo_real_pct = abs(sl_short - entry_short) / entry_short
-            pos_size = (capital * risk_per_trade) / max(riesgo_real_pct, 0.001)
-            if pos_size > HARD_CAP_LIQUIDITY: pos_size = HARD_CAP_LIQUIDITY
-            ganancia = pos_size * pnl_pct
-            capital += ganancia
-            equity_updates.append({'time': timestamps[exit_idx_s], 'pnl': ganancia, 'dir': 'S'})
-            trade_count += 1
-
-        max_exit = i
-        if long_active and salida_l is not None: max_exit = max(max_exit, exit_idx_l)
-        if short_active and salida_s is not None: max_exit = max(max_exit, exit_idx_s)
-        i = max_exit if max_exit > i else i + 1
-
-    return capital, equity_updates, trade_count
+    """DEPRECATED: Motor legado no realista. Re-anclado en run_live_replay."""
+    warnings.warn("run_realworld_backtest esta DEPRECADO; re-anclado en run_live_replay.", DeprecationWarning, stacklevel=2)
+    replay_df = df.iloc[start_idx:end_idx].copy()
+    timestamps = replay_df.index
+    capital, trades = run_live_engine(df, start_idx, end_idx, params, enforce_caps=True, balance0=initial_capital)
+    equity_updates = [{'time': timestamps[min(t['k'] - start_idx, len(timestamps) - 1)], 'pnl': t['pnl'], 'dir': t['dir']} for t in trades]
+    return capital, equity_updates, len(trades)
 
 
 def run_24h_report(sym):
@@ -176,7 +86,6 @@ def run_24h_report(sym):
     n_total = len(df)
     CANDLES_PER_DAY = 96
     TRAIN_DAYS = 3
-    MAX_RISK = 0.20
 
     test_end = n_total
     test_start = test_end - CANDLES_PER_DAY # Last 24 hours
@@ -186,19 +95,39 @@ def run_24h_report(sym):
         print(f"[{sym}] No hay suficientes datos.")
         return None
 
+    def _train_score(start, end, params):
+        """Score de entrenamiento alineado con run_wfo_daily: capital final del
+        motor LIVE penalizado por el drawdown (None si no hay muestra minima)."""
+        cap, t_count, trades = run_live_engine(df, start, end, params, enforce_caps=True, exit_manager=True)
+        if t_count < 7:
+            return None
+        equity, peak, max_dd = 250.0, 250.0, 0.0
+        for t in trades:
+            equity += t['pnl']
+            peak = max(peak, equity)
+            max_dd = max(max_dd, (peak - equity) / peak if peak else 0.0)
+        return cap * (1 - 2 * max_dd)
+
     def objective(trial):
+        # Espacio y seleccion ALINEADOS con run_wfo_daily() del bot live:
+        # guarda de geometria (TP >= SL en ATR por lado), risk_pct en [0.02, 0.08]
+        # y score = media del capital penalizado por DD en las dos mitades del
+        # train (validacion cruzada interna -> menos sobreajuste).
         params = {
             'grid_spacing_mult_l': trial.suggest_float('grid_spacing_mult_l', 0.5, 3.0),
-            'tp_mult_l': trial.suggest_float('tp_mult_l', 0.5, 2.0),
-            'sl_mult_l': trial.suggest_float('sl_mult_l', 1.0, 4.0),
+            'tp_mult_l': trial.suggest_float('tp_mult_l', 1.0, 2.0),
+            'sl_mult_l': trial.suggest_float('sl_mult_l', 1.0, 2.5),
             'grid_spacing_mult_s': trial.suggest_float('grid_spacing_mult_s', 0.5, 3.0),
-            'tp_mult_s': trial.suggest_float('tp_mult_s', 0.5, 2.0),
-            'sl_mult_s': trial.suggest_float('sl_mult_s', 1.0, 4.0),
-            'risk_pct': trial.suggest_float('risk_pct', MAX_RISK*0.5, MAX_RISK)
+            'tp_mult_s': trial.suggest_float('tp_mult_s', 1.0, 2.0),
+            'sl_mult_s': trial.suggest_float('sl_mult_s', 1.0, 2.5),
+            'risk_pct': trial.suggest_float('risk_pct', 0.02, 0.08)
         }
-        cap, _, t_count = run_realworld_backtest(df, train_start, test_start, 250.0, params)
-        if t_count < 3: return -1000
-        return cap
+        if not grid_geometry_ok(params): return -1000
+        mid = train_start + (test_start - train_start) // 2
+        s1 = _train_score(train_start, mid, params)
+        s2 = _train_score(mid, test_start, params)
+        if s1 is None or s2 is None: return -1000
+        return (s1 + s2) / 2
 
     # Mismo optimizador que el bot live (run_wfo_daily): 200 trials, seed fija 42.
     # Resultado REPRODUCIBLE: dos ejecuciones sobre los mismos datos dan lo mismo.
@@ -207,12 +136,9 @@ def run_24h_report(sym):
     p = study.best_params
 
     start_capital = 250.0
-    new_capital, eq, t_count = run_realworld_backtest(df, test_start, test_end, start_capital, p)
-    profit = new_capital - start_capital
-    profit_pct = (profit / start_capital) * 100
 
     # Motor LIVE-realista con los mismos params: lo que el bot puede reproducir.
-    live_capital, live_trades_n, live_trades = run_live_engine(df, test_start, test_end, p, enforce_caps=True)
+    live_capital, live_trades_n, live_trades = run_live_engine(df, test_start, test_end, p, enforce_caps=True, exit_manager=True)
     live_profit = live_capital - start_capital
     live_profit_pct = (live_profit / start_capital) * 100
 
@@ -221,22 +147,9 @@ def run_24h_report(sym):
 
     print(f"\n--- REPORTE ULTIMAS 24 HORAS: {sym} ---")
     print(f"Periodo Exacto: {start_time} a {end_time} UTC")
-    print(f"[RAW ] Trades: {t_count:3d} | PnL: ${profit:+8.2f} USD ({profit_pct:+6.2f}%)  <- apalancamiento ~40x, NO ejecutable")
     print(f"[LIVE] Trades: {live_trades_n:3d} | PnL: ${live_profit:+8.2f} USD ({live_profit_pct:+6.2f}%)  <- lo que el bot live/paper reproduce")
 
     fig, ax = plt.subplots(figsize=(10, 5))
-    if eq:
-        eq.sort(key=lambda x: x['time'])
-        times = [df.index[test_start]]
-        caps = [250.0]
-        current = 250.0
-        for u in eq:
-            current += u['pnl']
-            times.append(u['time'])
-            caps.append(current)
-        times.append(df.index[test_end-1])
-        caps.append(current)
-        ax.plot(times, caps, color='#888888', linewidth=1.5, linestyle='--', label='RAW (~40x, no ejecutable)')
     if live_trades:
         live_trades.sort(key=lambda x: x['k'])
         times_l = [df.index[test_start]]
@@ -244,14 +157,14 @@ def run_24h_report(sym):
         current_l = 250.0
         for t in live_trades:
             current_l += t['pnl']
-            times_l.append(df.index[t['k']])
+            times_l.append(df.index[min(t['k'], len(df) - 1)])
             caps_l.append(current_l)
         times_l.append(df.index[test_end-1])
         caps_l.append(current_l)
         ax.plot(times_l, caps_l, color='#00ffff' if live_profit > 0 else '#ff0000', linewidth=2, label=f'LIVE-realista ({LEVERAGE_LIVE}x + caps)')
         ax.fill_between(times_l, caps_l, 250, where=(np.array(caps_l) >= 250), color='#00ffff', alpha=0.3)
         ax.fill_between(times_l, caps_l, 250, where=(np.array(caps_l) < 250), color='#ff0000', alpha=0.3)
-    ax.set_title(f"Rendimiento Ultimas 24h ({sym}) | RAW {profit_pct:+.2f}% vs LIVE {live_profit_pct:+.2f}%", fontsize=13, color='white')
+    ax.set_title(f"Rendimiento Ultimas 24h ({sym}) | LIVE {live_profit_pct:+.2f}%", fontsize=13, color='white')
     ax.legend(facecolor='#1e1e1e', labelcolor='white')
     ax.set_facecolor('#1e1e1e')
     fig.patch.set_facecolor('#1e1e1e')
@@ -264,7 +177,7 @@ def run_24h_report(sym):
     plt.close()
     print(f"Grafica guardada en {out_png}")
 
-    return {'raw_pnl': profit, 'live_pnl': live_profit}
+    return {'live_pnl': live_profit}
 
 
 if __name__ == "__main__":
@@ -276,5 +189,4 @@ if __name__ == "__main__":
         if r: res[sym] = r
     if res:
         print("\n=== RESUMEN TOTAL (250 USDT por simbolo) ===")
-        print(f"RAW  (no ejecutable, ~40x): ${sum(r['raw_pnl'] for r in res.values()):+.2f} USD")
         print(f"LIVE (lo que el bot reproduce): ${sum(r['live_pnl'] for r in res.values()):+.2f} USD")

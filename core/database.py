@@ -28,6 +28,20 @@ async def init_db():
                 last_wfo_time TEXT
             )
         ''')
+        await db.execute('''
+            CREATE TABLE IF NOT EXISTS trade_ledger (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                symbol TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                entry_price REAL NOT NULL,
+                exit_price REAL NOT NULL,
+                size_usd REAL NOT NULL,
+                pnl REAL NOT NULL,
+                reason TEXT NOT NULL,
+                execution_mode TEXT NOT NULL
+            )
+        ''')
         await db.commit()
         logger.info("Base de datos SQLite inicializada correctamente.")
 
@@ -72,4 +86,46 @@ async def get_latest_state():
     except Exception as e:
         # Tipo de retorno consistente: dict con el estado o None (nunca {'error': ...})
         logger.error(f"Error leyendo el último estado de la base de datos: {e}")
+        return None
+
+
+async def record_trade(symbol: str, direction: str, entry_price: float,
+                       exit_price: float, size_usd: float, pnl: float,
+                       reason: str, execution_mode: str):
+    """Guarda un cierre inmutable para auditoría y métricas posteriores."""
+    async with _db_write_lock:
+        try:
+            async with aiosqlite.connect(str(DB_PATH)) as db:
+                await db.execute('''
+                    INSERT INTO trade_ledger
+                    (symbol, direction, entry_price, exit_price, size_usd, pnl, reason, execution_mode)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                ''', (symbol, direction, entry_price, exit_price, size_usd, pnl,
+                      reason, execution_mode))
+                await db.commit()
+        except Exception as e:
+            logger.error(f"Error guardando trade en ledger: {e}")
+
+
+async def get_trade_metrics(limit: int = 100):
+    """Resumen neto de cierres recientes, sin exponer información sensible."""
+    try:
+        async with aiosqlite.connect(str(DB_PATH)) as db:
+            async with db.execute('''
+                SELECT pnl, reason FROM trade_ledger ORDER BY id DESC LIMIT ?
+            ''', (limit,)) as cursor:
+                rows = await cursor.fetchall()
+        pnls = [row[0] for row in rows]
+        wins = [p for p in pnls if p > 0]
+        losses = [p for p in pnls if p < 0]
+        gross_loss = -sum(losses)
+        return {
+            'trades': len(pnls), 'net_pnl': sum(pnls),
+            'win_rate': len(wins) / len(pnls) if pnls else 0.0,
+            'profit_factor': sum(wins) / gross_loss if gross_loss else None,
+            'average_win': sum(wins) / len(wins) if wins else 0.0,
+            'average_loss': sum(losses) / len(losses) if losses else 0.0,
+        }
+    except Exception as e:
+        logger.error(f"Error calculando métricas del ledger: {e}")
         return None
