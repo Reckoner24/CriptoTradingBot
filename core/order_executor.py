@@ -1,4 +1,5 @@
 import logging
+import math
 import ccxt
 
 logger = logging.getLogger(__name__)
@@ -23,6 +24,11 @@ class OrderExecutor:
 
     def open_position(self, symbol: str, direction: str, size_usd: float, price: float) -> dict:
         self._ensure_leverage(symbol)
+        
+        # Validar precio
+        if price is None or price <= 0 or (isinstance(price, float) and math.isnan(price)):
+            logger.error(f"[OrderExecutor] Precio inválido para {symbol}: {price}")
+            return {'status': 'error', 'reason': f'invalid_price: {price}'}
         
         # Calcular tamaño base (ej. cantidad de BTC). Se recorta a 4 decimales por seguridad, 
         # aunque ccxt manejará los precision rules internamente si amount_to_precision se usa

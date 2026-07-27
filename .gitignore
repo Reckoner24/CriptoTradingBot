@@ -9,3 +9,8 @@ __pycache__/
 .claude*/
 # Archived scripts
 _archive/
+
+# Runtime artifacts
+bot_live.log*
+paper_state.json*
+*.bak

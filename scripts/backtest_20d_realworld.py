@@ -51,6 +51,9 @@ def prepare_data(df):
     df = df.copy()
     df['ATR'] = ta.atr(df['high'], df['low'], df['close'], length=14)
     df['EMA20'] = ta.ema(df['close'], length=20)
+    df['RSI'] = ta.rsi(df['close'], length=14)
+    df['VOL_SMA20'] = df['volume'].rolling(20).mean()
+    df['REL_VOL'] = df['volume'] / df['VOL_SMA20'].replace(0, 1.0)
     df.fillna(0, inplace=True)
     return df
 

@@ -20,6 +20,11 @@ async def init_db():
                 last_wfo_time TEXT
             )
         ''')
+        # Migration: add free_balance if missing (for DBs created before this column existed)
+        try:
+            await db.execute('ALTER TABLE bot_state ADD COLUMN free_balance REAL')
+        except aiosqlite.OperationalError:
+            pass  # column already exists
         await db.commit()
         logger.info("Base de datos SQLite inicializada correctamente.")
 
@@ -48,7 +53,7 @@ async def update_bot_state(status: str, balance: float, free_balance: float, ope
 async def get_latest_state():
     try:
         async with aiosqlite.connect(DB_PATH) as db:
-            async with db.execute('SELECT timestamp, status, balance, free_balance, open_positions, last_wfo_time FROM bot_state ORDER BY id DESC LIMIT 1') as cursor:
+            async with db.execute('SELECT timestamp, status, balance, free_balance, open_positions, last_wfo_time FROM bot_state WHERE id = 1') as cursor:
                 row = await cursor.fetchone()
                 if row:
                     return {
