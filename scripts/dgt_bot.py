@@ -92,6 +92,7 @@ def get_exchange():
         'enableRateLimit': True,
         'options': {'defaultType': 'future'},
     })
+    ex.options['recvWindow'] = 30000
     if using_testnet:
         ex.enable_demo_trading(True)
         LOG.info("Conectado a BINANCE DEMO TRADING")

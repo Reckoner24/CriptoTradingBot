@@ -28,6 +28,7 @@ def _binance():
         'enableRateLimit': True,
         'options': {'defaultType': 'future'},
     })
+    ex.options['recvWindow'] = 30000
     if os.getenv('BINANCE_TESTNET_KEY'):
         ex.enable_demo_trading(True)
     return ex
