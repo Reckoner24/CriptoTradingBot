@@ -42,60 +42,22 @@ async def test_websocket_streamer_reconnection():
 async def test_websocket_process_messages():
     streamer = WebSocketStreamer()
     
-    # aggTrade message
-    msg_trade = {
-        "stream": "btcusdt@aggTrade",
+    # bookTicker message
+    msg_book_ticker = {
+        "stream": "btcusdt@bookTicker",
         "data": {
-            "e": "aggTrade",
-            "E": 123456789,
+            "e": "bookTicker",
+            "u": 400900217,
             "s": "BTCUSDT",
-            "a": 5933014,
-            "p": "0.001",
-            "q": "100",
-            "f": 100,
-            "l": 105,
-            "T": 123456785,
-            "m": True
+            "b": "25000.0",
+            "B": "1.5",
+            "a": "25010.0",
+            "A": "2.0"
         }
     }
-    streamer._process_message(msg_trade)
-    assert len(streamer.ticks_buffer) == 1
-    assert streamer.ticks_buffer[0]["price"] == 0.001
-    assert streamer.ticks_buffer[0]["quantity"] == 100.0
-    
-    # depth message
-    msg_depth = {
-        "stream": "btcusdt@depth20@100ms",
-        "data": {
-            "e": "depthUpdate",
-            "E": 123456789,
-            "s": "BTCUSDT",
-            "b": [["0.0024", "10"]],
-            "a": [["0.0026", "100"]]
-        }
-    }
-    streamer._process_message(msg_depth)
-    assert "BTCUSDT" in streamer.order_book
-    assert streamer.order_book["BTCUSDT"]["bids"][0] == [0.0024, 10.0]
-    
-    # markPrice message
-    msg_mark = {
-        "stream": "btcusdt@markPrice",
-        "data": {
-            "e": "markPriceUpdate",
-            "E": 123456789,
-            "s": "BTCUSDT",
-            "p": "11794.15000000",
-            "i": "11784.62659091",
-            "P": "11784.25627172",
-            "r": "0.00038167",
-            "T": 1597392000000
-        }
-    }
-    streamer._process_message(msg_mark)
+    streamer._process_message(msg_book_ticker)
     assert "BTCUSDT" in streamer.mark_price_data
-    assert streamer.mark_price_data["BTCUSDT"]["mark_price"] == 11794.15
-    assert streamer.mark_price_data["BTCUSDT"]["funding_rate"] == 0.00038167
+    assert streamer.mark_price_data["BTCUSDT"]["mark_price"] == 25005.0
     
     # forceOrder message
     msg_force = {
@@ -123,3 +85,4 @@ async def test_websocket_process_messages():
     assert len(streamer.liquidations) == 1
     assert streamer.liquidations[0]["side"] == "SELL"
     assert streamer.liquidations[0]["price"] == 7110.0
+

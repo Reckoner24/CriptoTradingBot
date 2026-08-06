@@ -4,8 +4,8 @@ import asyncio
 from datetime import datetime, timezone
 import aiohttp
 from dotenv import load_dotenv
-from telegram import Update
-from telegram.ext import ApplicationBuilder, CommandHandler, ContextTypes
+from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
+from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # --- CONFIGURACION ---
 load_dotenv()
@@ -13,6 +13,11 @@ TELEGRAM_BOT_API = os.getenv("TELEGRAM_BOT_API", "")
 TELEGRAM_ID = os.getenv("TELEGRAM_ID", "")
 API_URL = "http://127.0.0.1:8000"
 BOT_LEVERAGE = os.getenv("BOT_LEVERAGE", "3")  # etiqueta informativa en /portafolio
+
+# --- MONITOR DE POSICIONES ---
+POSITIONS_POLL_SECONDS = 30
+_last_positions = {}
+_positions_initialized = False
 
 # --- WATCHDOG ---
 WATCHDOG_INTERVAL_SECONDS = 60      # chequeo cada 60s
@@ -27,14 +32,21 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # --- GESTION DE ADMINISTRADOR ---
+def _authorized_ids() -> list:
+    """Retorna lista de chat_ids autorizados desde TELEGRAM_ID (separados por coma)."""
+    if not TELEGRAM_ID:
+        return []
+    return [tid.strip() for tid in TELEGRAM_ID.split(",") if tid.strip()]
+
 def is_authorized(update: Update) -> bool:
     chat_id = str(update.effective_chat.id)
+    allowed = _authorized_ids()
 
-    if not TELEGRAM_ID:
+    if not allowed:
         logger.error("TELEGRAM_ID no está configurado en .env")
         return False
 
-    if chat_id != TELEGRAM_ID:
+    if chat_id not in allowed:
         logger.warning(f"Intento de acceso no autorizado desde Chat ID: {chat_id}")
         return False
 
@@ -52,6 +64,18 @@ async def fetch_api(endpoint: str):
     except Exception as e:
         logger.error(f"Error conectando a la API local: {e}")
         return {"status": "error", "message": "No se pudo conectar a la API local. ¿Está uvicorn corriendo?"}
+
+async def fetch_api_post(endpoint: str, payload: dict):
+    try:
+        async with aiohttp.ClientSession(timeout=API_TIMEOUT) as session:
+            async with session.post(f"{API_URL}{endpoint}", json=payload) as response:
+                if response.status == 200:
+                    return await response.json()
+                else:
+                    return {"status": "error", "message": f"HTTP Error {response.status}"}
+    except Exception as e:
+        logger.error(f"Error conectando a la API local (POST): {e}")
+        return {"status": "error", "message": f"No se pudo conectar a la API local: {e}"}
 
 # --- WATCHDOG DEL TRADING-CORE ---
 async def _state_age_seconds(bot_data: dict):
@@ -139,18 +163,102 @@ async def watchdog_loop(app):
                 logger.error(f"Watchdog: no se pudo enviar el mensaje de recuperación: {e}")
             alarm_reason = ""
 
+async def watch_positions_loop(app):
+    """Cada 30s consulta /status y notifica cuando aparecen/desaparecen posiciones."""
+    global _last_positions, _positions_initialized
+
+    logger.info("📡 Monitor de posiciones iniciado: chequeando cada %ds", POSITIONS_POLL_SECONDS)
+    await asyncio.sleep(5)
+
+    while True:
+        await asyncio.sleep(POSITIONS_POLL_SECONDS)
+        data = await fetch_api("/status")
+
+        if data.get("status") != "success":
+            continue
+
+        bot_data = data.get("data", {})
+        current_raw = bot_data.get("open_positions", {})
+        current_positions = {}
+        for sym, directions in current_raw.items():
+            for side, info in directions.items():
+                if side not in ("LONG", "SHORT"):
+                    continue
+                current_positions[f"{sym}_{side}"] = {
+                    "entry_price": info.get("entry_price", 0),
+                    "last_mark_price": info.get("mark_price", info.get("entry_price", 0)),
+                    "size_usd": info.get("size_usd", 0),
+                    "unrealized_pnl": info.get("unrealized_pnl", 0),
+                }
+
+        if not _positions_initialized:
+            _last_positions = current_positions
+            _positions_initialized = True
+            logger.info("Monitor: estado inicial guardado (%d posiciones)", len(current_positions))
+            continue
+
+        current_keys = set(current_positions.keys())
+        last_keys = set(_last_positions.keys())
+
+        opened_keys = current_keys - last_keys
+        closed_keys = last_keys - current_keys
+
+        messages = []
+
+        for key in sorted(opened_keys):
+            info = current_positions[key]
+            sym, side = key.rsplit("_", 1)
+            icon = "🟢" if side == "LONG" else "🔴"
+            entry = info["entry_price"]
+            size = info["size_usd"]
+            messages.append(
+                f"{icon} <b>ABRIÓ {side}</b> en {sym}\n"
+                f"   Entrada: <code>${entry:,.4f}</code>\n"
+                f"   Tamaño: <code>${size:,.2f}</code>"
+            )
+
+        for key in sorted(closed_keys):
+            info = _last_positions.get(key, {})
+            sym, side = key.rsplit("_", 1)
+            icon = "🟢" if side == "LONG" else "🔴"
+            entry = info.get("entry_price", 0)
+            exit_price = info.get("last_mark_price", entry)
+            pnl_pct = ((exit_price / entry) - 1.0) * 100 if entry > 0 else 0.0
+            if side == "SHORT":
+                pnl_pct = -pnl_pct
+            pnl_icon = "📈" if pnl_pct >= 0 else "📉"
+            messages.append(
+                f"{icon} <b>CERRÓ {side}</b> en {sym}\n"
+                f"   Entrada: <code>${entry:,.4f}</code>\n"
+                f"   PnL: {pnl_icon} <b>{pnl_pct:+.2f}%</b>"
+            )
+
+        if messages:
+            combined = "\n\n".join(messages)
+            try:
+                await app.bot.send_message(
+                    chat_id=TELEGRAM_ID,
+                    text=f"📊 <b>Movimiento de Posiciones</b>\n\n{combined}",
+                    parse_mode="HTML"
+                )
+            except Exception as e:
+                logger.error(f"Monitor: error enviando notificación: {e}")
+
+        _last_positions = current_positions
+
+
 async def post_init(app):
-    # UNA SOLA post_init: antes existian dos definiciones y la segunda
-    # (set_my_commands) tapaba a esta, dejando el watchdog sin arrancar.
-    # 1) Lanzar el watchdog en segundo plano cuando arranca la aplicación.
     app.create_task(watchdog_loop(app))
-    # 2) Registrar los comandos visibles en el menú de Telegram.
+    app.create_task(watch_positions_loop(app))
     await app.bot.set_my_commands([
         ("start", "Inicia el bot y verifica seguridad"),
-        ("status", "Muestra el estado general del bot"),
-        ("posiciones", "Muestra las posiciones abiertas actuales"),
-        ("portafolio", "Muestra el balance y pnl flotante"),
-        ("orders", "Muestra las órdenes limit abiertas")
+        ("status", "Salud del sistema y microservicios"),
+        ("portafolio", "Resumen financiero, balance y patrimonio"),
+        ("posiciones", "Mesa de operaciones abiertas en vivo"),
+        ("grid", "Estado y niveles de la grilla DGT"),
+        ("orders", "Resumen de órdenes límite activas"),
+        ("metrics", "Rendimiento histórico (Win Rate, PnL)"),
+        ("help", "Guía y menú de comandos")
     ])
 
 # --- COMANDOS DEL BOT ---
@@ -160,14 +268,40 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         return
 
     welcome_msg = (
-        "🤖 <b>Cripto Trading Bot</b>\n\n"
-        "¡Hola! Soy tu bot asistente. A partir de ahora solo responderé a tus comandos.\n\n"
-        "Comandos disponibles:\n"
-        "🔹 /status - Resumen del balance y estado del sistema\n"
-        "🔹 /posiciones - Detalles de las operaciones abiertas\n"
-        "🔹 /portafolio - Balance, margen libre y PnL flotante"
+        "🤖 <b>Cripto Trading Assist v2.0</b>\n"
+        "⚡ <i>Asistente Cuantitativo de Monitoreo en Tiempo Real</i>\n\n"
+        "<b>Comandos Especializados:</b>\n"
+        "🟢 /status — Salud de servicios y seguridad\n"
+        "💰 /portafolio — Balance, margen libre y patrimonio\n"
+        "🎯 /posiciones — Operaciones abiertas en vivo\n"
+        "🧩 /grid — Monitoreo de niveles DGT por par\n"
+        "📋 /orders — Resumen de órdenes límite activas\n"
+        "📊 /metrics — Win Rate y PnL realizado histórico\n"
+        "ℹ️ /help — Guía rápida de uso"
     )
     await update.message.reply_text(welcome_msg, parse_mode="HTML")
+
+async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ No estás autorizado")
+        return
+
+    help_msg = (
+        "ℹ️ <b>Sitemap de Comandos Especializados</b>\n\n"
+        "🟢 <b>/status</b>\n"
+        "Monitoreo operativo: estado de microservicios (API, Telegram, Bot), tiempo de actividad y nivel de riesgo configurado.\n\n"
+        "💰 <b>/portafolio</b>\n"
+        "Monitoreo financiero: balance en billetera, patrimonio estimado (equity), margen libre disponible y PnL flotante global.\n\n"
+        "🎯 <b>/posiciones</b>\n"
+        "Mesa de trading: precio de entrada, precio marca actual, valor nocional y PnL ($ y ROI %) por cada orden abierta con botón de cierre interactivo.\n\n"
+        "🧩 <b>/grid</b>\n"
+        "Monitoreo DGT: estado detallado de la grilla dinámica, órdenes activas, compras ejecutadas y margen por moneda.\n\n"
+        "📋 <b>/orders</b>\n"
+        "Resumen agrupado de órdenes límite de compra en grilla y ventas Take-Profit en Binance.\n\n"
+        "📊 <b>/metrics</b>\n"
+        "Estadísticas de cierres pasados: Win Rate %, PnL neto realizado y Profit Factor."
+    )
+    await update.message.reply_text(help_msg, parse_mode="HTML")
 
 async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
@@ -179,27 +313,85 @@ async def status(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data.get("status") == "success":
         bot_data = data["data"]
-        balance = bot_data.get("balance", 0.0)
         bot_state = bot_data.get("status", "Desconocido")
         last_update = bot_data.get("timestamp", "Nunca")
-        open_pos = bot_data.get("open_positions", {})
         stale = bot_data.get("stale", False)
-
-        # Count actual active positions, not just symbols in dict
+        open_pos = bot_data.get("open_positions", {})
         open_pos_count = sum(1 for sym, dirs in open_pos.items() for d in dirs.keys() if d in ["LONG", "SHORT"])
 
-        stale_warning = "\n⚠️ <b>Datos posiblemente desactualizados (stale)</b>" if stale else ""
+        dgt = bot_data.get("dgt", {})
+        params = dgt.get("params", {})
+        lev = params.get("leverage", BOT_LEVERAGE)
+        sp = params.get("spacing", 1.0)
+        lvls = params.get("levels", 3)
+        sl = params.get("stop_loss", 3.0)
+
+        sys_status_icon = "🟢" if bot_state == "running" and not stale else "🔴"
+        stale_warning = "\n⚠️ <i>Datos de estado desactualizados (stale)</i>" if stale else ""
 
         msg = (
-            "📊 <b>Estado del Bot</b>\n"
-            f"💰 <b>Balance Billetera (Total):</b> <code>${balance:,.2f}</code> USDT\n"
-            f"🔄 <b>Estado:</b> <code>{bot_state}</code>\n"
-            f"📈 <b>Operaciones Abiertas:</b> <code>{open_pos_count}</code>\n"
-            f"⏱ <b>Última Actualización:</b> <code>{last_update}</code>"
+            "🛡️ <b>Salud del Sistema & Operativa</b>\n\n"
+            f"{sys_status_icon} <b>Estado Core:</b> <code>{bot_state.upper()}</code>\n"
+            f"🔌 <b>Microservicios:</b> FastAPI <code>OK</code> | Telegram <code>OK</code> | DGT <code>OK</code>\n"
+            f"⚡ <b>Riesgo Activo:</b> Apalancamiento <code>{lev}x</code> | Stop-Loss <code>{sl}%</code> (Aislado)\n"
+            f"🧩 <b>Configuración DGT:</b> <code>sp={sp}</code> | <code>levels={lvls}</code>\n"
+            f"📈 <b>Operaciones Abiertas:</b> <code>{open_pos_count}</code> en mercado\n"
+            f"⏱ <b>Último Latido:</b> <code>{last_update} UTC</code>"
             f"{stale_warning}"
         )
     else:
-        msg = f"⚠️ <b>Error al obtener el estado:</b>\n{data.get('message', 'Desconocido')}"
+        msg = f"⚠️ <b>Error al conectar con la API:</b>\n{data.get('message', 'Desconocido')}"
+
+    await update.message.reply_text(msg, parse_mode="HTML")
+
+async def portafolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ No estás autorizado")
+        return
+
+    await update.message.reply_chat_action(action="typing")
+    data = await fetch_api("/status")
+
+    if data.get("status") == "success":
+        bot_data = data["data"]
+        balance = bot_data.get("balance", 0.0)
+        free_balance = bot_data.get("free_balance", 0.0)
+        open_pos = bot_data.get("open_positions", {})
+        dgt = bot_data.get("dgt", {})
+        active_lev = dgt.get("params", {}).get("leverage", BOT_LEVERAGE)
+
+        total_pnl = 0.0
+        details = ""
+
+        for sym, directions in open_pos.items():
+            for d_name, d_info in directions.items():
+                if d_name not in ["LONG", "SHORT"]: continue
+                size = d_info.get("size_usd", 0)
+                pnl = d_info.get("unrealized_pnl", 0.0)
+                total_pnl += pnl
+                pnl_pct = (pnl / size * 100) if size > 0 else 0.0
+                pnl_icon = "🟢" if pnl >= 0 else "🔴"
+                details += f"  {pnl_icon} <b>{sym}</b> ({d_name}): <b>${pnl:,.2f}</b> (<code>{pnl_pct:+.2f}%</code>)\n"
+
+        if not details:
+            details = "  ✅ <i>Cero flotante (100% libre)</i>\n"
+
+        equity = balance + total_pnl
+        used_margin = balance - free_balance
+        pnl_icon = "📈" if total_pnl >= 0 else "📉"
+
+        msg = (
+            "💰 <b>Resumen Financiero & Balance</b>\n\n"
+            f"💵 <b>Balance Total Billetera:</b> <code>${balance:,.2f}</code> USDT\n"
+            f"🔓 <b>Margen Libre Disponible:</b> <code>${free_balance:,.2f}</code> USDT\n"
+            f"🔒 <b>Margen Ocupado en Garantía:</b> <code>${used_margin:,.2f}</code> USDT\n"
+            f"💎 <b>Patrimonio Estimado (Equity):</b> <code>${equity:,.2f}</code> USDT\n"
+            f"⚖️ <b>PnL Flotante Total:</b> {pnl_icon} <b>${total_pnl:,.2f}</b> USDT\n\n"
+            f"📊 <b>Desglose por Moneda ({active_lev}x):</b>\n"
+            f"{details}"
+        )
+    else:
+        msg = f"⚠️ <b>Error al consultar portafolio:</b>\n{data.get('message', 'Desconocido')}"
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
@@ -215,30 +407,91 @@ async def posiciones(update: Update, context: ContextTypes.DEFAULT_TYPE):
         bot_data = data["data"]
         open_pos = bot_data.get("open_positions", {})
 
-        if not open_pos:
-            await update.message.reply_text("✅ No hay posiciones abiertas actualmente.")
-            return
-
-        msg = "🎯 <b>Posiciones Abiertas</b>\n\n"
+        has_active = False
         for sym, directions in open_pos.items():
             for d_name, d_info in directions.items():
+                if d_name not in ["LONG", "SHORT"]: continue
+                has_active = True
                 entry = d_info.get("entry_price", 0)
+                mark = d_info.get("mark_price", entry)
                 size = d_info.get("size_usd", 0)
-                candles = d_info.get("candles_held", 0)
+                pnl = d_info.get("unrealized_pnl", 0.0)
+                pnl_pct = (pnl / size * 100) if size > 0 else 0.0
+                side_icon = "🟢" if d_name == "LONG" else "🔴"
+                pnl_icon = "📈" if pnl >= 0 else "📉"
 
-                icono = "🟢" if d_name == "LONG" else "🔴"
-                msg += (
-                    f"{icono} <b>{sym}</b> ({d_name})\n"
-                    f"   Entrada: <code>${entry:,.4f}</code>\n"
-                    f"   Tamaño: <code>${size:,.2f}</code>\n"
-                    f"   Velas Sostenida: <code>{candles}</code>\n\n"
+                pos_msg = (
+                    f"{side_icon} <b>{sym}</b> [{d_name}]\n"
+                    f"   Entrada: <code>${entry:,.2f}</code> | Marca: <code>${mark:,.2f}</code>\n"
+                    f"   Nocional: <code>${size:,.2f} USD</code>\n"
+                    f"   PnL Flotante: {pnl_icon} <b>${pnl:,.2f}</b> (<code>{pnl_pct:+.2f}%</code>)"
                 )
+
+                clean_sym = sym.replace('/', '')
+                keyboard = InlineKeyboardMarkup([
+                    [InlineKeyboardButton(f"❌ Cerrar Posición {sym}", callback_data=f"close_ask:{clean_sym}")]
+                ])
+                await update.message.reply_text(pos_msg, parse_mode="HTML", reply_markup=keyboard)
+
+        if not has_active:
+            await update.message.reply_text("✅ <b>Sin Posiciones Flotantes.</b> La mesa está 100% limpia.", parse_mode="HTML")
     else:
-        msg = f"⚠️ <b>Error al obtener las posiciones:</b>\n{data.get('message', 'Desconocido')}"
+        msg = f"⚠️ <b>Error al consultar posiciones:</b>\n{data.get('message', 'Desconocido')}"
+        await update.message.reply_text(msg, parse_mode="HTML")
 
-    await update.message.reply_text(msg, parse_mode="HTML")
+async def button_callback(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
 
-async def portafolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    chat_id = str(update.effective_chat.id)
+    allowed = _authorized_ids()
+    if allowed and chat_id not in allowed:
+        await query.edit_message_text("⛔ No estás autorizado")
+        return
+
+    data = query.data
+    if data.startswith("close_ask:"):
+        clean_sym = data.split("close_ask:")[1]
+        formatted_sym = clean_sym.replace("USDT", "/USDT")
+
+        confirm_keyboard = InlineKeyboardMarkup([
+            [
+                InlineKeyboardButton("✅ Sí, Cerrar a Mercado", callback_data=f"close_exec:{clean_sym}"),
+                InlineKeyboardButton("🚫 Cancelar", callback_data=f"close_cancel:{clean_sym}")
+            ]
+        ])
+        await query.edit_message_text(
+            f"⚠️ <b>¿Confirmas cerrar a mercado la posición en {formatted_sym}?</b>\n\n"
+            f"<i>Se cancelarán las órdenes pendientes asociadas y se ejecutará la venta a mercado con reduceOnly=True.</i>",
+            parse_mode="HTML",
+            reply_markup=confirm_keyboard
+        )
+    elif data.startswith("close_exec:"):
+        clean_sym = data.split("close_exec:")[1]
+        formatted_sym = clean_sym.replace("USDT", "/USDT")
+
+        await query.edit_message_text(f"⏳ <b>Ejecutando cierre a mercado de {formatted_sym}...</b>", parse_mode="HTML")
+
+        res = await fetch_api_post("/close_position", {"symbol": formatted_sym})
+        if res.get("status") == "success":
+            await query.edit_message_text(
+                f"✅ <b>Posición Cerrada Exitosamente</b>\n\n"
+                f"Símbolo: <code>{formatted_sym}</code>\n"
+                f"Detalle: {res.get('message')}\n"
+                f"Precio de Cierre: <code>${res.get('close_price', 0):,.2f}</code>",
+                parse_mode="HTML"
+            )
+        else:
+            await query.edit_message_text(
+                f"❌ <b>Error al cerrar posición en {formatted_sym}:</b>\n{res.get('message')}",
+                parse_mode="HTML"
+            )
+    elif data.startswith("close_cancel:"):
+        clean_sym = data.split("close_cancel:")[1]
+        formatted_sym = clean_sym.replace("USDT", "/USDT")
+        await query.edit_message_text(f"ℹ️ <i>Cierre de posición en {formatted_sym} cancelado.</i>", parse_mode="HTML")
+
+async def grid(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
         await update.message.reply_text("⛔ No estás autorizado")
         return
@@ -248,62 +501,36 @@ async def portafolio(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     if data.get("status") == "success":
         bot_data = data["data"]
-        balance_total = bot_data.get("balance", 0.0)
-        free_balance = bot_data.get("free_balance", 0.0)
-        open_pos = bot_data.get("open_positions", {})
+        dgt = bot_data.get("dgt", {})
+        if not dgt or dgt.get("mode") != "dgt":
+            await update.message.reply_text("ℹ️ El bot de grilla DGT no se encuentra activo.")
+            return
 
-        global_pnl = 0.0
-        details = ""
-
-        for sym, directions in open_pos.items():
-            for d_name, d_info in directions.items():
-                if d_name not in ["LONG", "SHORT"]: continue
-
-                entry = d_info.get("entry_price", 0)
-                current = d_info.get("current_price", entry)
-                size = d_info.get("size_usd", 0)
-                pnl = d_info.get("unrealized_pnl", 0.0)
-                global_pnl += pnl
-
-                icono = "🟢" if d_name == "LONG" else "🔴"
-                pnl_icon = "📈" if pnl >= 0 else "📉"
-
-                pnl_pct = (pnl / size * 100) if size else 0.0
-
-                details += (
-                    f"{icono} <b>{sym}</b> ({d_name})\n"
-                    f"   Tamaño Apalancado ({BOT_LEVERAGE}x): <code>${size:,.2f}</code>\n"
-                    f"   Entrada: <code>${entry:,.4f}</code>\n"
-                    f"   Actual: <code>${current:,.4f}</code>\n"
-                    f"   PnL: {pnl_icon} <b>${pnl:,.2f}</b> (<code>{pnl_pct:+.2f}%</code>)\n\n"
-                )
-
-        if details == "":
-            details = "✅ No hay posiciones activas.\n"
-
-        realized_line = ""
-        metrics = await fetch_api("/metrics")
-        if metrics.get("status") == "success":
-            md = metrics.get("data") or {}
-            if md.get("trades"):
-                pf = md.get("profit_factor")
-                pf_txt = f"{pf:.2f}" if pf is not None else "∞"
-                realized_line = (
-                    f"📒 <b>Realizado (últimos {md['trades']} cierres):</b> "
-                    f"<code>${md.get('net_pnl', 0.0):,.2f}</code> | WR <code>{md.get('win_rate', 0.0) * 100:.0f}%</code> | PF <code>{pf_txt}</code>\n"
-                )
+        params = dgt.get("params", {})
+        symbols_info = dgt.get("symbols", {})
 
         msg = (
-            "💼 <b>Portafolio Actual</b>\n"
-            f"💰 <b>Balance Billetera:</b> <code>${balance_total:,.2f}</code> USDT\n"
-            f"🔓 <b>Margen Libre:</b> <code>${free_balance:,.2f}</code> USDT\n"
-            f"⚖️ <b>PnL Flotante Total:</b> <b>${global_pnl:,.2f}</b> USDT\n"
-            f"{realized_line}\n"
-            f"📊 <b>Distribución de Activos:</b>\n"
-            f"{details}"
+            "🧩 <b>Monitoreo de Grilla Dinámica (DGT)</b>\n"
+            f"⚙️ <b>Parámetros:</b> <code>{params.get('leverage', 20)}x</code> | "
+            f"Cap Total: <code>${params.get('capital', 250):.0f} USDT</code> | "
+            f"SL: <code>{params.get('stop_loss', 3)}%</code>\n\n"
         )
+
+        for sym, sinfo in symbols_info.items():
+            orders_cnt = sinfo.get("grid_orders_active", 0)
+            fills_cnt = sinfo.get("buys_filled_count", 0)
+            eq_sym = sinfo.get("equity_per_symbol", 83.33)
+            lvls = sinfo.get("levels", [])
+            center_price = lvls[len(lvls)//2] if lvls else 0.0
+
+            msg += (
+                f"🔹 <b>{sym}</b>\n"
+                f"   Cap Asignado: <code>${eq_sym:.2f} USD</code>\n"
+                f"   Órdenes Activas: <code>{orders_cnt}</code> | Fills Acumulados: <code>{fills_cnt}</code>\n"
+                f"   Precio Centro Grilla: <code>${center_price:,.2f}</code>\n\n"
+            )
     else:
-        msg = f"⚠️ <b>Error al obtener el portafolio:</b>\n{data.get('message', 'Desconocido')}"
+        msg = f"⚠️ <b>Error al consultar estado DGT:</b>\n{data.get('message', 'Desconocido')}"
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
@@ -318,25 +545,59 @@ async def orders(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if data.get("status") == "success":
         orders_list = data.get("orders", [])
         if not orders_list:
-            await update.message.reply_text("📭 No hay órdenes limit abiertas.")
+            await update.message.reply_text("📭 No hay órdenes límite activas en Binance.")
             return
 
-        msg = "📋 <b>Órdenes Limit Abiertas</b>\n\n"
+        grouped = {}
         for o in orders_list:
-            icon = "🟢" if o["side"] == "buy" else "🔴"
-            remaining = o["remaining"]
-            filled = o["filled"]
-            total = o["amount"]
-            pct = f"({filled/total*100:.0f}% llenada)" if total > 0 else ""
-            msg += (
-                f"{icon} <b>{o['symbol']}</b> {o['side'].upper()} {o['type']}\n"
-                f"   Precio: <code>${o['price']:.4f}</code>\n"
-                f"   Cant: <code>{remaining:.4f}</code> / <code>{total:.4f}</code> {pct}\n"
-            )
+            key = (o["symbol"], o["side"])
+            grouped.setdefault(key, []).append(o)
 
-        msg += f"\nTotal: <code>{data['count']}</code> órdenes"
+        msg = f"📋 <b>Resumen de Órdenes Límite Activas ({data['count']} Total)</b>\n\n"
+        for (sym, side), o_group in grouped.items():
+            icon = "🟢" if side == "buy" else "🔴"
+            side_txt = "COMPRA (Grilla)" if side == "buy" else "VENTA (Take-Profit)"
+            total_amt = sum(o["amount"] for o in o_group)
+            prices = [o["price"] for o in o_group]
+            min_p, max_p = min(prices), max(prices)
+            price_str = f"${min_p:,.2f}" if min_p == max_p else f"${min_p:,.2f} - ${max_p:,.2f}"
+
+            msg += (
+                f"{icon} <b>{sym}</b> — {len(o_group)} órdenes {side_txt}\n"
+                f"   Rango: <code>{price_str}</code>\n"
+                f"   Volumen: <code>{total_amt:,.4f}</code>\n\n"
+            )
     else:
         msg = f"⚠️ <b>Error al obtener órdenes:</b>\n{data.get('message', 'Desconocido')}"
+
+    await update.message.reply_text(msg, parse_mode="HTML")
+
+async def metrics(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ No estás autorizado")
+        return
+
+    await update.message.reply_chat_action(action="typing")
+    data = await fetch_api("/metrics")
+
+    if data.get("status") == "success":
+        md = data.get("data", {})
+        trades = md.get("trades", 0)
+        net_pnl = md.get("net_pnl", 0.0)
+        win_rate = md.get("win_rate", 0.0) * 100
+        pf = md.get("profit_factor")
+        pf_txt = f"{pf:.2f}" if pf is not None else "N/A"
+        pnl_icon = "📈" if net_pnl >= 0 else "📉"
+
+        msg = (
+            "📊 <b>Rendimiento Histórico Realizado</b>\n\n"
+            f"🔄 <b>Trades Cerrados:</b> <code>{trades}</code>\n"
+            f"💰 <b>PnL Neto Realizado:</b> {pnl_icon} <code>${net_pnl:,.2f}</code> USDT\n"
+            f"🎯 <b>Win Rate:</b> <code>{win_rate:.1f}%</code>\n"
+            f"⚖️ <b>Profit Factor:</b> <code>{pf_txt}</code>"
+        )
+    else:
+        msg = f"⚠️ <b>Error al consultar métricas:</b>\n{data.get('message', 'Desconocido')}"
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
@@ -349,10 +610,14 @@ def main():
     app = ApplicationBuilder().token(TELEGRAM_BOT_API).post_init(post_init).build()
 
     app.add_handler(CommandHandler("start", start))
+    app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("status", status))
-    app.add_handler(CommandHandler("posiciones", posiciones))
     app.add_handler(CommandHandler("portafolio", portafolio))
+    app.add_handler(CommandHandler("posiciones", posiciones))
+    app.add_handler(CommandHandler("grid", grid))
     app.add_handler(CommandHandler("orders", orders))
+    app.add_handler(CommandHandler("metrics", metrics))
+    app.add_handler(CallbackQueryHandler(button_callback))
 
     logger.info("🤖 Bot de Telegram iniciado y escuchando comandos...")
     app.run_polling()

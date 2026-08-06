@@ -20,11 +20,16 @@ async def init_db():
                 last_wfo_time TEXT
             )
         ''')
-        # Migration: add free_balance if missing (for DBs created before this column existed)
+        # Migration: add free_balance if missing
         try:
             await db.execute('ALTER TABLE bot_state ADD COLUMN free_balance REAL')
         except aiosqlite.OperationalError:
-            pass  # column already exists
+            pass
+        # Migration: add dgt_state if missing
+        try:
+            await db.execute('ALTER TABLE bot_state ADD COLUMN dgt_state TEXT')
+        except aiosqlite.OperationalError:
+            pass
         await db.commit()
         logger.info("Base de datos SQLite inicializada correctamente.")
 
@@ -50,20 +55,37 @@ async def update_bot_state(status: str, balance: float, free_balance: float, ope
     except Exception as e:
         logger.error(f"Error actualizando la base de datos: {e}")
 
+async def update_dgt_state(dgt_data: dict):
+    try:
+        async with aiosqlite.connect(DB_PATH) as db:
+            dgt_json = json.dumps(dgt_data)
+            async with db.execute('SELECT 1 FROM bot_state WHERE id = 1') as cursor:
+                row = await cursor.fetchone()
+                if row:
+                    await db.execute('UPDATE bot_state SET dgt_state = ? WHERE id = 1', (dgt_json,))
+                else:
+                    await db.execute('INSERT INTO bot_state (id, dgt_state) VALUES (1, ?)', (dgt_json,))
+            await db.commit()
+    except Exception as e:
+        logger.error(f"Error actualizando DGT state: {e}")
+
 async def get_latest_state():
     try:
         async with aiosqlite.connect(DB_PATH) as db:
-            async with db.execute('SELECT timestamp, status, balance, free_balance, open_positions, last_wfo_time FROM bot_state WHERE id = 1') as cursor:
+            async with db.execute('SELECT timestamp, status, balance, free_balance, open_positions, last_wfo_time, dgt_state FROM bot_state WHERE id = 1') as cursor:
                 row = await cursor.fetchone()
                 if row:
-                    return {
+                    result = {
                         "timestamp": row[0],
                         "status": row[1],
                         "balance": row[2],
                         "free_balance": row[3],
-                        "open_positions": json.loads(row[4]),
-                        "last_wfo_time": row[5]
+                        "open_positions": json.loads(row[4]) if row[4] else {},
+                        "last_wfo_time": row[5],
                     }
+                    if row[6]:
+                        result["dgt"] = json.loads(row[6])
+                    return result
                 return None
     except Exception as e:
         return {"error": str(e)}

@@ -4,7 +4,7 @@ echo Iniciando Gestor del Bot de Trading...
 
 :loop
 echo [%time%] Ejecutando bot...
-.entorno\Scripts\python.exe scripts\bot_live_bidirectional.py
+.entorno\Scripts\python.exe scripts\dgt_bot.py
 
 echo.
 echo [%time%] El proceso del bot termino inesperadamente (crasheo).

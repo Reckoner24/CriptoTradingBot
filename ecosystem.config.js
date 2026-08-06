@@ -1,8 +1,11 @@
+const path = require('path');
+const pythonExec = path.join(__dirname, '.entorno', 'Scripts', 'pythonw.exe');
+
 module.exports = {
   apps: [
     {
       name: 'api-server',
-      script: 'pythonw',
+      script: pythonExec,
       args: '-m uvicorn api.server:app --host 127.0.0.1 --port 8000',
       interpreter: 'none',
       watch: false,
@@ -15,7 +18,7 @@ module.exports = {
     {
       name: 'telegram-bot',
       script: 'telegram_service.py',
-      interpreter: 'pythonw',
+      interpreter: pythonExec,
       watch: false,
       autorestart: true,
       max_restarts: 10,
@@ -26,7 +29,7 @@ module.exports = {
     {
       name: 'dgt-grid-bot',
       script: 'scripts/dgt_bot.py',
-      interpreter: 'pythonw',
+      interpreter: pythonExec,
       watch: false,
       autorestart: true,
       max_restarts: 10,
