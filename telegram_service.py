@@ -8,7 +8,7 @@ from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, ContextTypes
 
 # --- CONFIGURACION ---
-load_dotenv()
+load_dotenv(override=True)
 TELEGRAM_BOT_API = os.getenv("TELEGRAM_BOT_API", "")
 TELEGRAM_ID = os.getenv("TELEGRAM_ID", "")
 API_URL = "http://127.0.0.1:8000"
@@ -601,6 +601,15 @@ async def metrics(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(msg, parse_mode="HTML")
 
+from telegram.error import NetworkError
+
+async def error_handler(update: object, context: ContextTypes.DEFAULT_TYPE) -> None:
+    """Maneja de forma limpia los parpadeos transitorios de red de Telegram sin saturar el log."""
+    if isinstance(context.error, NetworkError):
+        logger.warning(f"Reconexión transitoria de red con Telegram: {context.error}")
+    else:
+        logger.error("Excepción no controlada en el bot de Telegram:", exc_info=context.error)
+
 # --- BUCLE PRINCIPAL ---
 def main():
     if not TELEGRAM_BOT_API:
@@ -608,6 +617,7 @@ def main():
         return
 
     app = ApplicationBuilder().token(TELEGRAM_BOT_API).post_init(post_init).build()
+    app.add_error_handler(error_handler)
 
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))

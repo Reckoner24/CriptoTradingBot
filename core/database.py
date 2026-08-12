@@ -4,11 +4,16 @@ import logging
 import os
 
 logger = logging.getLogger('bot_logger')
-DB_PATH = "data/trading_bot.db"
+DB_PATH = os.path.abspath("data/trading_bot.db")
 
 async def init_db():
     os.makedirs(os.path.dirname(DB_PATH), exist_ok=True)
-    async with aiosqlite.connect(DB_PATH) as db:
+    async with aiosqlite.connect(DB_PATH, timeout=30.0) as db:
+        try:
+            await db.execute('PRAGMA journal_mode=WAL;')
+            await db.execute('PRAGMA busy_timeout=30000;')
+        except Exception:
+            pass
         await db.execute('''
             CREATE TABLE IF NOT EXISTS bot_state (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -35,7 +40,9 @@ async def init_db():
 
 async def update_bot_state(status: str, balance: float, free_balance: float, open_positions: dict, last_wfo_time: str):
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(DB_PATH, timeout=30.0) as db:
+            await db.execute('PRAGMA journal_mode=WAL;')
+            await db.execute('PRAGMA busy_timeout=30000;')
             pos_json = json.dumps(open_positions)
             # Primero checamos si existe la fila 1
             async with db.execute('SELECT 1 FROM bot_state WHERE id = 1') as cursor:
@@ -57,7 +64,9 @@ async def update_bot_state(status: str, balance: float, free_balance: float, ope
 
 async def update_dgt_state(dgt_data: dict):
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(DB_PATH, timeout=30.0) as db:
+            await db.execute('PRAGMA journal_mode=WAL;')
+            await db.execute('PRAGMA busy_timeout=30000;')
             dgt_json = json.dumps(dgt_data)
             async with db.execute('SELECT 1 FROM bot_state WHERE id = 1') as cursor:
                 row = await cursor.fetchone()
@@ -71,7 +80,9 @@ async def update_dgt_state(dgt_data: dict):
 
 async def get_latest_state():
     try:
-        async with aiosqlite.connect(DB_PATH) as db:
+        async with aiosqlite.connect(DB_PATH, timeout=30.0) as db:
+            await db.execute('PRAGMA journal_mode=WAL;')
+            await db.execute('PRAGMA busy_timeout=30000;')
             async with db.execute('SELECT timestamp, status, balance, free_balance, open_positions, last_wfo_time, dgt_state FROM bot_state WHERE id = 1') as cursor:
                 row = await cursor.fetchone()
                 if row:

@@ -14,18 +14,28 @@ import logging
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 
-load_dotenv()
+load_dotenv(override=True)
+
+class SafeRotatingFileHandler(RotatingFileHandler):
+    def emit(self, record):
+        try:
+            super().emit(record)
+        except Exception:
+            pass
+
+    def handleError(self, record):
+        pass
 
 LOG = logging.getLogger('dgt_bot')
 LOG.setLevel(logging.INFO)
-_handler = RotatingFileHandler('bot_live.log', maxBytes=150*1024, backupCount=4)
+_handler = SafeRotatingFileHandler('bot_live.log', maxBytes=150*1024, backupCount=4, delay=True)
 _handler.setFormatter(logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s'))
 LOG.addHandler(_handler)
 LOG.addHandler(logging.StreamHandler())
 
 import ccxt
 
-LEVERAGE = int(os.getenv('DGT_LEVERAGE', '20'))
+LEVERAGE = int(os.getenv('DGT_LEVERAGE') or os.getenv('BOT_LEVERAGE') or '10')
 RISK_PCT = float(os.getenv('DGT_RISK_PCT', '0.50'))
 GRID_SPACING = float(os.getenv('DGT_SPACING', '1.0'))
 NUM_LEVELS = int(os.getenv('DGT_LEVELS', '3'))
@@ -40,62 +50,114 @@ STOP_LOSS_PCT = float(os.getenv('DGT_STOP_LOSS', str(round(DEFAULT_SL, 2))))
 
 SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
 
+def _get_db_conn():
+    db_path = os.path.abspath("data/trading_bot.db")
+    os.makedirs(os.path.dirname(db_path), exist_ok=True)
+    conn = sqlite3.connect(db_path, timeout=30.0)
+    try:
+        conn.execute('PRAGMA journal_mode=WAL;')
+        conn.execute('PRAGMA busy_timeout=30000;')
+    except Exception:
+        pass
+    return conn
+
 def update_db_state(status_text, balance, free_balance, open_positions):
     """Write current state to SQLite DB so API server can serve it."""
     import sqlite3, json
-    db_path = "data/trading_bot.db"
     try:
-        os.makedirs(os.path.dirname(db_path), exist_ok=True)
-        conn = sqlite3.connect(db_path)
-        # Migration for existing databases without free_balance
-        try:
-            conn.execute('ALTER TABLE bot_state ADD COLUMN free_balance REAL')
-        except sqlite3.OperationalError:
-            pass
-        conn.execute('''CREATE TABLE IF NOT EXISTS bot_state (
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
-            status TEXT,
-            balance REAL,
-            free_balance REAL,
-            open_positions TEXT,
-            last_wfo_time TEXT
-        )''')
-        pos_json = json.dumps(open_positions)
-        row = conn.execute('SELECT 1 FROM bot_state WHERE id = 1').fetchone()
-        if row:
-            conn.execute('''UPDATE bot_state SET timestamp=CURRENT_TIMESTAMP,status=?,balance=?,free_balance=?,
-                           open_positions=?,last_wfo_time=? WHERE id=1''',
-                        (status_text, balance, free_balance, pos_json, ""))
-        else:
-            conn.execute('''INSERT INTO bot_state(id,status,balance,free_balance,open_positions,last_wfo_time)
-                           VALUES(1,?,?,?,?,?)''',
-                        (status_text, balance, free_balance, pos_json, ""))
-        conn.commit()
-        conn.close()
+        with _get_db_conn() as conn:
+            # Migration for existing databases without free_balance
+            try:
+                conn.execute('ALTER TABLE bot_state ADD COLUMN free_balance REAL')
+            except sqlite3.OperationalError:
+                pass
+            conn.execute('''CREATE TABLE IF NOT EXISTS bot_state (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                status TEXT,
+                balance REAL,
+                free_balance REAL,
+                open_positions TEXT,
+                last_wfo_time TEXT
+            )''')
+            pos_json = json.dumps(open_positions)
+            row = conn.execute('SELECT 1 FROM bot_state WHERE id = 1').fetchone()
+            if row:
+                conn.execute('''UPDATE bot_state SET timestamp=CURRENT_TIMESTAMP,status=?,balance=?,free_balance=?,
+                               open_positions=?,last_wfo_time=? WHERE id=1''',
+                            (status_text, balance, free_balance, pos_json, ""))
+            else:
+                conn.execute('''INSERT INTO bot_state(id,status,balance,free_balance,open_positions,last_wfo_time)
+                               VALUES(1,?,?,?,?,?)''',
+                            (status_text, balance, free_balance, pos_json, ""))
+            conn.commit()
     except Exception as e:
         LOG.warning(f"DB update error: {e}")
 
 def update_dgt_state(dgt_data):
     """Write DGT-specific state to SQLite so API server can serve it."""
     import sqlite3, json
-    db_path = "data/trading_bot.db"
     try:
-        conn = sqlite3.connect(db_path)
-        try:
-            conn.execute('ALTER TABLE bot_state ADD COLUMN dgt_state TEXT')
-        except sqlite3.OperationalError:
-            pass
-        dgt_json = json.dumps(dgt_data)
-        row = conn.execute('SELECT 1 FROM bot_state WHERE id = 1').fetchone()
-        if row:
-            conn.execute('UPDATE bot_state SET dgt_state=? WHERE id=1', (dgt_json,))
-        else:
-            conn.execute('INSERT INTO bot_state(id, dgt_state) VALUES(1, ?)', (dgt_json,))
-        conn.commit()
-        conn.close()
+        with _get_db_conn() as conn:
+            try:
+                conn.execute('ALTER TABLE bot_state ADD COLUMN dgt_state TEXT')
+            except sqlite3.OperationalError:
+                pass
+            dgt_json = json.dumps(dgt_data)
+            row = conn.execute('SELECT 1 FROM bot_state WHERE id = 1').fetchone()
+            if row:
+                conn.execute('UPDATE bot_state SET dgt_state=? WHERE id=1', (dgt_json,))
+            else:
+                conn.execute('INSERT INTO bot_state(id, dgt_state) VALUES(1, ?)', (dgt_json,))
+            conn.commit()
     except Exception as e:
         LOG.warning(f"DGT state DB error: {e}")
+
+_last_ip_alert_time = 0
+
+def send_telegram_alert(message: str):
+    token = os.getenv("TELEGRAM_BOT_API")
+    chat_ids = [cid.strip() for cid in os.getenv("TELEGRAM_ID", "").split(",") if cid.strip()]
+    if not token or not chat_ids:
+        return
+    import urllib.parse, urllib.request
+    for cid in chat_ids:
+        try:
+            url = f"https://api.telegram.org/bot{token}/sendMessage"
+            data = urllib.parse.urlencode({
+                "chat_id": cid,
+                "text": message,
+                "parse_mode": "HTML"
+            }).encode('utf-8')
+            req = urllib.request.Request(url, data=data, headers={"User-Agent": "Mozilla/5.0"})
+            urllib.request.urlopen(req, timeout=5)
+        except Exception as e:
+            LOG.error(f"Error enviando alerta de Telegram: {e}")
+
+def notify_ip_error(error_msg: str):
+    global _last_ip_alert_time
+    if time.time() - _last_ip_alert_time < 300:
+        return
+    _last_ip_alert_time = time.time()
+    
+    import re
+    m = re.search(r"request ip:\s*([\d\.]+)", error_msg)
+    if m:
+        ip_match = m.group(1)
+    else:
+        try:
+            import urllib.request
+            ip_match = urllib.request.urlopen('https://api.ipify.org', timeout=3).read().decode('utf-8')
+        except Exception:
+            ip_match = "Desconocida"
+
+    msg = (
+        "🌐 <b>ALERTA BINANCE: IP RECHAZADA</b>\n\n"
+        f"Binance bloqueó la conexión porque cambió tu dirección IP pública.\n\n"
+        f"📍 <b>Nueva IP a agregar:</b> <code>{ip_match}</code>\n\n"
+        f"<b>Solución:</b> Copia la IP arriba y entrada en Binance ➔ <i>API Management</i> ➔ <i>Edit Restrictions</i>."
+    )
+    send_telegram_alert(msg)
 
 def check_manual_reset(symbol):
     import sqlite3
@@ -181,6 +243,7 @@ class DGTBot:
                 'buy_entries': {},  # idx -> entry_price for stop-loss
                 'liquidations': 0,
             }
+        self.health_check()
 
     def build_price_levels(self, center, atr):
         d = atr * GRID_SPACING
@@ -240,6 +303,9 @@ class DGTBot:
                 continue
             lvl_price = round(lvl / tick_size) * tick_size
             amt = notional_per_unit / lvl_price
+            min_amt = market.get('limits', {}).get('amount', {}).get('min')
+            if min_amt and amt < min_amt:
+                amt = float(min_amt)
             amt = float(self.ex.amount_to_precision(symbol, amt))
             if amt <= 0:
                 continue
@@ -613,6 +679,9 @@ class DGTBot:
                 continue
             lvl_price = round(lvl / tick_size) * tick_size
             amt = notional_per_unit / lvl_price
+            min_amt = market.get('limits', {}).get('amount', {}).get('min')
+            if min_amt and amt < min_amt:
+                amt = float(min_amt)
             amt = float(self.ex.amount_to_precision(symbol, amt))
             if amt <= 0:
                 continue
@@ -640,8 +709,6 @@ class DGTBot:
             return True
         except Exception as e:
             LOG.error(f"Error reconectando: {e}")
-            return False
-
     def run_forever(self):
         """Run with auto-reconnect and SIGTERM handling."""
         signal.signal(signal.SIGTERM, lambda *_: self._shutdown())
@@ -653,6 +720,9 @@ class DGTBot:
                 self._reconnect_exchange()
                 time.sleep(10)
             except Exception as e:
+                err_str = str(e)
+                if "-2015" in err_str or "Invalid API-key" in err_str or "request ip" in err_str:
+                    notify_ip_error(err_str)
                 LOG.error(f"Error inesperado: {e}, reiniciando en 30s...")
                 time.sleep(30)
 
