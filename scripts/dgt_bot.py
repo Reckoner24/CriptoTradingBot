@@ -11,6 +11,8 @@ import os
 import time
 import signal
 import logging
+import sqlite3
+import json
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 
