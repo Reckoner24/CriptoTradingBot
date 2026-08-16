@@ -12,7 +12,9 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       env: {
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        DGT_LEVERAGE: '20',
+        DGT_CAPITAL: '45'
       }
     },
     {
@@ -23,18 +25,22 @@ module.exports = {
       autorestart: true,
       max_restarts: 10,
       env: {
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        DGT_LEVERAGE: '20',
+        DGT_CAPITAL: '45'
       }
     },
     {
       name: 'dgt-grid-bot',
-      script: 'scripts/dgt_bot.py',
+      script: 'dgt_bot_sol.py',
       interpreter: pythonExec,
       watch: false,
       autorestart: true,
       max_restarts: 10,
       env: {
-        NODE_ENV: 'production'
+        NODE_ENV: 'production',
+        DGT_LEVERAGE: '20',
+        DGT_CAPITAL: '45'
       }
     }
   ]

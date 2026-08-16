@@ -13,6 +13,7 @@ import signal
 import logging
 import sqlite3
 import json
+from collections import deque
 from logging.handlers import RotatingFileHandler
 from dotenv import load_dotenv
 
@@ -36,6 +37,7 @@ LOG.addHandler(_handler)
 LOG.addHandler(logging.StreamHandler())
 
 import ccxt
+from core.maker_execution import place_maker_order
 
 LEVERAGE = int(os.getenv('DGT_LEVERAGE') or os.getenv('BOT_LEVERAGE') or '10')
 RISK_PCT = float(os.getenv('DGT_RISK_PCT', '0.50'))
@@ -49,6 +51,18 @@ POLL_SECONDS = int(os.getenv('DGT_POLL', '10'))
 max_safe_sl = max(0.5, (1.0 / LEVERAGE - 0.008) * 100)
 DEFAULT_SL = min(3.0, max_safe_sl)
 STOP_LOSS_PCT = float(os.getenv('DGT_STOP_LOSS', str(round(DEFAULT_SL, 2))))
+
+# Kill-switches: cortan exposicion nueva sin tocar el manejo de posiciones ya abiertas
+MAX_RESETS_PER_WINDOW = int(os.getenv('DGT_MAX_RESETS', '5'))
+RESET_WINDOW_SECONDS = int(os.getenv('DGT_RESET_WINDOW_SEC', '1800'))
+MAX_DAILY_DRAWDOWN_PCT = float(os.getenv('DGT_MAX_DRAWDOWN_PCT', '15'))
+
+# Cierre maker en boundary break: taker cuesta 0.05% vs maker 0.02% (medido via API).
+# Las 116 ordenes taker de la ultima semana costaron $6.89 sobre $13,774 de volumen;
+# como maker habrian costado $2.75. Solo aplica a cierres NO urgentes.
+MAKER_CLOSE_ENABLED = os.getenv('DGT_MAKER_CLOSE', '1') not in ('0', 'false', 'False')
+MAKER_CLOSE_TIMEOUT_S = float(os.getenv('DGT_MAKER_TIMEOUT', '4'))
+MAKER_CLOSE_REQUEUES = int(os.getenv('DGT_MAKER_REQUEUES', '1'))
 
 SYMBOLS = ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
 
@@ -114,6 +128,29 @@ def update_dgt_state(dgt_data):
             conn.commit()
     except Exception as e:
         LOG.warning(f"DGT state DB error: {e}")
+
+def record_trade(symbol, direction, entry_price, exit_price, size_usd, pnl, reason):
+    """Persist a closed trade (any reason: TP, stop-loss, reset, liquidation guard) for audit history."""
+    try:
+        with _get_db_conn() as conn:
+            conn.execute('''CREATE TABLE IF NOT EXISTS trade_ledger (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                timestamp DATETIME DEFAULT CURRENT_TIMESTAMP,
+                symbol TEXT NOT NULL,
+                direction TEXT NOT NULL,
+                entry_price REAL NOT NULL,
+                exit_price REAL NOT NULL,
+                size_usd REAL NOT NULL,
+                pnl REAL NOT NULL,
+                reason TEXT NOT NULL,
+                execution_mode TEXT NOT NULL
+            )''')
+            conn.execute('''INSERT INTO trade_ledger(symbol,direction,entry_price,exit_price,size_usd,pnl,reason,execution_mode)
+                           VALUES(?,?,?,?,?,?,?,?)''',
+                        (symbol, direction, entry_price, exit_price, size_usd, pnl, reason, 'live'))
+            conn.commit()
+    except Exception as e:
+        LOG.warning(f"[{symbol}] Trade ledger write error: {e}")
 
 _last_ip_alert_time = 0
 
@@ -230,6 +267,9 @@ class DGTBot:
         self.capital_per_sym = CAPITAL_TOTAL / len(SYMBOLS)
         self.running = True
         self.state = {}
+        self.start_balance = None
+        self.trading_paused = False
+        self.paused_symbols = set()
 
     def setup(self):
         for sym in SYMBOLS:
@@ -242,10 +282,62 @@ class DGTBot:
                 'levels': [],
                 'level_orders': {},
                 'buys_filled': set(),
-                'buy_entries': {},  # idx -> entry_price for stop-loss
+                'buy_entries': {},  # idx -> entry_price for stop-loss (idx -1 = posicion huerfana recuperada)
                 'liquidations': 0,
+                'reset_times': deque(),
             }
+            self._recover_orphan_position(sym)
         self.health_check()
+
+    def _open_position_notional(self, symbol):
+        """Posicion REAL abierta en Binance para este simbolo: (amount, entry_price, notional_usd)."""
+        try:
+            bal = self.ex.fetch_balance()
+            raw_sym = symbol.replace('/', '')
+            for p in bal.get('info', {}).get('positions', []):
+                if p.get('symbol') == raw_sym:
+                    amt = float(p.get('positionAmt', 0))
+                    if abs(amt) < 0.0001:
+                        return 0.0, 0.0, 0.0
+                    entry = float(p.get('entryPrice', 0))
+                    notional = abs(float(p.get('notional', 0))) or abs(amt) * entry
+                    return amt, entry, notional
+        except Exception as e:
+            LOG.warning(f"[{symbol}] Error consultando posicion: {e}")
+        return 0.0, 0.0, 0.0
+
+    def _recover_orphan_position(self, symbol):
+        """Al iniciar/reiniciar el proceso, detecta una posicion real que Binance ya tiene abierta
+        pero que el estado en memoria no conoce (p.ej. tras un pm2 restart), y la trackea para
+        que el stop-loss no quede ciego. No toca 'buys_filled' para no interferir con el sizing
+        de la grilla nueva."""
+        amt, entry, notional = self._open_position_notional(symbol)
+        if amt > 0.0001 and entry > 0:
+            self.state[symbol]['buy_entries'][-1] = entry
+            LOG.warning(f"[{symbol}] Posicion huerfana detectada al iniciar: {amt} @ {entry:.4f} (${notional:.2f}) — trackeada para stop-loss")
+            send_telegram_alert(
+                f"⚠️ <b>Posicion huerfana detectada</b>\n{symbol}: {amt} @ {entry:.4f} (${notional:.2f})\n"
+                f"El bot la esta trackeando para stop-loss. Revisa si es intencional."
+            )
+        elif amt < -0.0001:
+            LOG.warning(f"[{symbol}] Posicion SHORT huerfana ({amt}) — DGT es long-only, revisar manualmente en Binance")
+            send_telegram_alert(f"⚠️ <b>Posicion SHORT inesperada en {symbol}</b>: {amt} @ {entry:.4f}. DGT solo opera LONG.")
+
+    def _capped_buy_amount(self, symbol, desired_amt, price, effective_capital=None):
+        """Limita una compra propuesta para que la exposicion total nunca supere capital*leverage.
+        Devuelve 0 si el bot esta en pausa global (kill-switch de drawdown)."""
+        if self.trading_paused:
+            return 0.0
+        if desired_amt <= 0 or price <= 0:
+            return 0.0
+        cap = effective_capital if effective_capital else self.capital_per_sym
+        max_notional = cap * self.leverage
+        _, _, current_notional = self._open_position_notional(symbol)
+        remaining = max_notional - current_notional
+        if remaining <= 0:
+            return 0.0
+        max_amt = remaining / price
+        return min(desired_amt, max_amt)
 
     def build_price_levels(self, center, atr):
         d = atr * GRID_SPACING
@@ -307,16 +399,23 @@ class DGTBot:
             amt = notional_per_unit / lvl_price
             min_amt = market.get('limits', {}).get('amount', {}).get('min')
             if min_amt and amt < min_amt:
+                LOG.warning(f"[{symbol}] Tamano calculado ({amt:.6f}) menor al minimo del exchange ({min_amt}); "
+                            f"se usara el minimo, que EXCEDE el riesgo configurado")
                 amt = float(min_amt)
-            amt = float(self.ex.amount_to_precision(symbol, amt))
-            if amt <= 0:
-                continue
 
             try:
                 if idx < mid:
+                    amt = self._capped_buy_amount(symbol, amt, lvl_price, effective_capital)
+                    amt = float(self.ex.amount_to_precision(symbol, amt)) if amt > 0 else 0.0
+                    if amt <= 0:
+                        LOG.warning(f"[{symbol}] Nivel {lvl_price} omitido: exposicion ya al tope o bot en pausa")
+                        continue
                     order = self.ex.create_limit_buy_order(symbol, amt, lvl_price)
                     state['level_orders'][idx] = order['id']
                 else:
+                    amt = float(self.ex.amount_to_precision(symbol, amt))
+                    if amt <= 0:
+                        continue
                     buy_idx = mid - (idx - mid)
                     if buy_idx in state['buys_filled']:
                         order = self.ex.create_limit_sell_order(symbol, amt, lvl_price, {'reduceOnly': True})
@@ -329,6 +428,14 @@ class DGTBot:
 
     def process_fills(self, symbol):
         state = self.state[symbol]
+        if symbol in self.paused_symbols:
+            if check_manual_reset(symbol):
+                self.paused_symbols.discard(symbol)
+                state['reset_times'].clear()
+                LOG.info(f"[{symbol}] Reanudado manualmente vía Telegram")
+                send_telegram_alert(f"▶️ {symbol} reanudado manualmente.")
+                self.place_grid_orders(symbol, self._current_capital(symbol))
+            return
         if not state['levels']:
             return
 
@@ -370,8 +477,12 @@ class DGTBot:
                         LOG.info(f"[{symbol}] Orden de compra {oid} fue cancelada")
                         del state['level_orders'][idx]
                         continue
-                except Exception:
-                    is_closed = True
+                    else:
+                        # Estado incierto (aun abierta, o desconocido): NO asumir fill, reintentar el próximo ciclo
+                        continue
+                except Exception as e:
+                    LOG.warning(f"[{symbol}] No se pudo confirmar estado de orden {oid}: {e}, reintentando próximo ciclo")
+                    continue
 
                 if is_closed:
                     state['buys_filled'].add(idx)
@@ -406,18 +517,26 @@ class DGTBot:
             if oid not in open_orders_map:
                 try:
                     o_info = self.ex.fetch_order(oid, symbol)
-                    if o_info and o_info.get('status') == 'canceled':
-                        LOG.info(f"[{symbol}] Orden de venta {oid} fue cancelada")
-                        del state['level_orders'][idx]
-                        continue
-                except Exception:
-                    pass
+                except Exception as e:
+                    LOG.warning(f"[{symbol}] No se pudo confirmar estado de orden {oid}: {e}, reintentando próximo ciclo")
+                    continue
+                if o_info and o_info.get('status') == 'canceled':
+                    LOG.info(f"[{symbol}] Orden de venta {oid} fue cancelada")
+                    del state['level_orders'][idx]
+                    continue
+                if not (o_info and o_info.get('status') == 'closed'):
+                    # Aun abierta o estado desconocido: NO asumir fill
+                    continue
 
+                filled_amt = float(o_info.get('filled', 0.0) or o_info.get('amount', 0.0))
                 state['buys_filled'].discard(buy_idx)
                 buy_price = levels[buy_idx]
                 sell_price = levels[idx]
                 net_pct = (sell_price / buy_price - 1.0 - 0.0008) * 100
                 LOG.info(f"[{symbol}] PAIR: {buy_price:.2f}->{sell_price:.2f} = {net_pct:+.2f}%")
+                pair_amt = filled_amt if filled_amt > 0 else (self._current_capital(symbol) * RISK_PCT / len(levels) * self.leverage / buy_price)
+                record_trade(symbol, 'LONG', buy_price, sell_price, pair_amt * buy_price,
+                              pair_amt * buy_price * (net_pct / 100.0), 'TAKE PROFIT')
                 del state['level_orders'][idx]
                 if buy_idx in state['level_orders']:
                     del state['level_orders'][buy_idx]
@@ -428,10 +547,13 @@ class DGTBot:
                     cap_unit = self._current_capital(symbol) * RISK_PCT / len(levels)
                     notional_unit = cap_unit * self.leverage
                     amt = notional_unit / lvl_price
-                    amt = float(self.ex.amount_to_precision(symbol, amt))
+                    amt = self._capped_buy_amount(symbol, amt, lvl_price)
+                    amt = float(self.ex.amount_to_precision(symbol, amt)) if amt > 0 else 0.0
                     if amt > 0:
                         new_order = self.ex.create_limit_buy_order(symbol, amt, lvl_price)
                         state['level_orders'][buy_idx] = new_order['id']
+                    else:
+                        LOG.warning(f"[{symbol}] Buy de reposición omitido: exposición ya al tope o bot en pausa")
                 except Exception as e:
                     LOG.warning(f"[{symbol}] Error re-colocando buy: {e}")
 
@@ -453,6 +575,8 @@ class DGTBot:
                         try:
                             self.ex.create_market_sell_order(symbol, amt, {'reduceOnly': True})
                             LOG.warning(f"[{symbol}] LIQUIDATION GUARD: {entry:.2f}->{current_price:.2f}")
+                            record_trade(symbol, 'LONG', entry, current_price,
+                                         amt * entry, amt * (current_price - entry), 'LIQUIDATION GUARD')
                         except Exception as e:
                             LOG.error(f"[{symbol}] Liquidation guard error: {e}")
                     state['buys_filled'].discard(bidx)
@@ -467,7 +591,7 @@ class DGTBot:
         if manual_reset or current_price < levels[0] or current_price > levels[-1]:
             reset_type = "MANUAL RESET (TELEGRAM)" if manual_reset else "BOUNDARY BREAK"
             LOG.warning(f"[{symbol}] {reset_type} @{current_price:.2f}, reseteando grilla limpia")
-            
+
             # Cancelar todas las órdenes abiertas en Binance antes de cerrar posición
             try:
                 self.ex.cancel_all_orders(symbol)
@@ -475,7 +599,12 @@ class DGTBot:
                 pass
             state['level_orders'].clear()
 
-            # Consultar y cerrar la posición REAL en Binance
+            # Consultar y cerrar la posición REAL en Binance.
+            # Un boundary break NO es urgente (el precio salio del rango, pero no hay riesgo
+            # inminente de liquidacion), asi que se intenta cerrar como MAKER para pagar
+            # 0.02% en vez de 0.05%. Si no llena en el tiempo dado, se cae a mercado.
+            # Stop-loss y liquidation guard SIGUEN siendo market: ahi ejecutar importa mas
+            # que ahorrar comision.
             try:
                 bal = self.ex.fetch_balance()
                 raw_sym = symbol.replace('/', '')
@@ -487,17 +616,54 @@ class DGTBot:
                             close_amt = float(self.ex.amount_to_precision(symbol, abs(amt)))
                             if close_amt > 0:
                                 side = "sell" if amt > 0 else "buy"
-                                if side == "sell":
-                                    self.ex.create_market_sell_order(symbol, close_amt, {'reduceOnly': True})
-                                else:
-                                    self.ex.create_market_buy_order(symbol, close_amt, {'reduceOnly': True})
-                                LOG.info(f"[{symbol}] RESET CLOSE EXITOSO: Posición {amt} cerrada a mercado @ {current_price:.2f}")
+                                filled_as_maker = False
+                                if MAKER_CLOSE_ENABLED:
+                                    try:
+                                        res = place_maker_order(
+                                            self.ex, symbol, side, close_amt,
+                                            timeout_s=MAKER_CLOSE_TIMEOUT_S,
+                                            max_requeues=MAKER_CLOSE_REQUEUES,
+                                            reduce_only=True)
+                                        filled_as_maker = res.filled
+                                        if filled_as_maker:
+                                            LOG.info(f"[{symbol}] RESET CLOSE como MAKER @ {res.fill_price} "
+                                                     f"(ahorro comision; intentos={res.attempts})")
+                                    except Exception as e:
+                                        LOG.warning(f"[{symbol}] Cierre maker fallo, usando mercado: {e}")
+                                if not filled_as_maker:
+                                    if side == "sell":
+                                        self.ex.create_market_sell_order(symbol, close_amt, {'reduceOnly': True})
+                                    else:
+                                        self.ex.create_market_buy_order(symbol, close_amt, {'reduceOnly': True})
+                                    LOG.info(f"[{symbol}] RESET CLOSE a mercado: Posición {amt} @ {current_price:.2f}")
+                                entry_price = float(p.get('entryPrice', 0)) or current_price
+                                record_trade(symbol, 'LONG' if amt > 0 else 'SHORT', entry_price, current_price,
+                                              abs(amt) * entry_price, amt * (current_price - entry_price), reset_type)
             except Exception as e:
                 LOG.error(f"[{symbol}] Reset close error: {e}")
 
             state['buys_filled'].clear()
             state['buy_entries'].clear()
-            self.place_grid_orders(symbol, self._current_capital(symbol))
+
+            # Kill-switch: demasiados resets en poco tiempo = la grilla no encaja con la volatilidad actual
+            rt = state['reset_times']
+            now = time.time()
+            rt.append(now)
+            while rt and now - rt[0] > RESET_WINDOW_SECONDS:
+                rt.popleft()
+            if len(rt) >= MAX_RESETS_PER_WINDOW:
+                self.paused_symbols.add(symbol)
+                LOG.error(f"[{symbol}] {len(rt)} resets en {RESET_WINDOW_SECONDS}s — PAUSANDO símbolo (grilla demasiado angosta para esta volatilidad)")
+                send_telegram_alert(
+                    f"🛑 <b>{symbol} pausado</b>\n{len(rt)} resets en {RESET_WINDOW_SECONDS//60} min.\n"
+                    f"Sin órdenes nuevas hasta que hagas un reset manual por Telegram (eso también lo reanuda)."
+                )
+                continue_placing = False
+            else:
+                continue_placing = True
+
+            if continue_placing:
+                self.place_grid_orders(symbol, self._current_capital(symbol))
 
         # Stop-loss check
         stop_triggered = False
@@ -517,6 +683,8 @@ class DGTBot:
                                 if close_amt > 0:
                                     self.ex.create_market_sell_order(symbol, close_amt, {'reduceOnly': True})
                                     LOG.warning(f"[{symbol}] STOP-LOSS EJECUTADO: {entry:.2f}->{current_price:.2f} ({loss_pct:+.2f}%)")
+                                    record_trade(symbol, 'LONG', entry, current_price,
+                                                  close_amt * entry, close_amt * (current_price - entry), 'STOP LOSS')
                 except Exception as e:
                     LOG.error(f"[{symbol}] Stop-loss error: {e}")
                 state['buys_filled'].discard(bidx)
@@ -529,6 +697,28 @@ class DGTBot:
         try:
             bal = self.ex.fetch_balance()
             usdt = bal['total'].get('USDT', 0)
+
+            # Kill-switch: drawdown diario. Corta exposición NUEVA en todos los símbolos;
+            # las posiciones ya abiertas siguen protegidas por stop-loss / boundary break.
+            if self.start_balance is None:
+                self.start_balance = usdt
+            elif not self.trading_paused and self.start_balance > 0:
+                drawdown_pct = (self.start_balance - usdt) / self.start_balance * 100
+                if drawdown_pct >= MAX_DAILY_DRAWDOWN_PCT:
+                    self.trading_paused = True
+                    LOG.error(f"DRAWDOWN {drawdown_pct:.1f}% >= {MAX_DAILY_DRAWDOWN_PCT}% — PAUSANDO todo el trading nuevo")
+                    send_telegram_alert(
+                        f"🛑 <b>BOT PAUSADO (drawdown)</b>\n"
+                        f"${self.start_balance:.2f} → ${usdt:.2f} ({drawdown_pct:.1f}%)\n"
+                        f"No se abrirán posiciones nuevas. Las existentes siguen con stop-loss activo.\n"
+                        f"Reinicia el proceso para reanudar, después de revisar qué pasó."
+                    )
+                    for sym in SYMBOLS:
+                        try:
+                            self.ex.cancel_all_orders(sym)
+                        except Exception:
+                            pass
+
             positions = []
             open_pos_dict = {}
             for item in bal.get('info', {}).get('positions', []):
@@ -683,15 +873,22 @@ class DGTBot:
             amt = notional_per_unit / lvl_price
             min_amt = market.get('limits', {}).get('amount', {}).get('min')
             if min_amt and amt < min_amt:
+                LOG.warning(f"[{symbol}] Tamano calculado ({amt:.6f}) menor al minimo del exchange ({min_amt}); "
+                            f"se usara el minimo, que EXCEDE el riesgo configurado")
                 amt = float(min_amt)
-            amt = float(self.ex.amount_to_precision(symbol, amt))
-            if amt <= 0:
-                continue
             try:
                 if idx < mid:
+                    amt = self._capped_buy_amount(symbol, amt, lvl_price)
+                    amt = float(self.ex.amount_to_precision(symbol, amt)) if amt > 0 else 0.0
+                    if amt <= 0:
+                        LOG.warning(f"[{symbol}] Nivel {lvl_price} omitido en recovery: exposición ya al tope o bot en pausa")
+                        continue
                     order = self.ex.create_limit_buy_order(symbol, amt, lvl_price)
                     state['level_orders'][idx] = order['id']
                 else:
+                    amt = float(self.ex.amount_to_precision(symbol, amt))
+                    if amt <= 0:
+                        continue
                     buy_idx = mid - (idx - mid)
                     if buy_idx in state['buys_filled']:
                         order = self.ex.create_limit_sell_order(symbol, amt, lvl_price, {'reduceOnly': True})

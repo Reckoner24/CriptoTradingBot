@@ -245,7 +245,8 @@ def run_optimization_for_sym(sym):
     ax.tick_params(colors='white')
     ax.grid(color='#444444', linestyle='--', linewidth=0.5)
     plt.xticks(rotation=45)
-    artifact_dir = r"C:\Users\Manu\.gemini\antigravity\brain\783f53a5-fa72-4405-a613-4b976ee52762"
+    artifact_dir = r"C:\Users\mages\.gemini\antigravity\brain\6fa9ceee-f4a4-44d1-b502-98f7a8ed8529"
+    os.makedirs(artifact_dir, exist_ok=True)
     plt.savefig(f"{artifact_dir}/wfo_20d_{sym.replace('/','_')}.png", dpi=100, bbox_inches='tight')
 
 def main():
