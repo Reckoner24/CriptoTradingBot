@@ -59,6 +59,7 @@ def prepare_data(df):
 
 def run_realworld_backtest(df, start_idx, end_idx, initial_capital, params):
     COM = 0.0004
+    FILL_BUFFER = float(os.getenv('BT_FILL_BUFFER_BPS', '5')) / 10000.0  # exige que el precio atraviese el nivel (no solo lo toque) en entradas/TP
     capital = initial_capital
     df_eval = df.iloc[start_idx:end_idx]
     if len(df_eval) <= 40: return capital, [], 0
@@ -100,7 +101,14 @@ def run_realworld_backtest(df, start_idx, end_idx, initial_capital, params):
         entry_short = close[i] + spacing_s
         sl_short = entry_short + (current_atr * sl_mult_s)
         tp_short = entry_short - (spacing_s * tp_mult_s)
-        
+
+        # Umbrales de fill "menos optimistas": el SL se dispara al toque (igual que antes);
+        # entrada y TP requieren que el precio atraviese el nivel por FILL_BUFFER.
+        entry_long_fill = entry_long * (1 - FILL_BUFFER)
+        tp_long_fill = tp_long * (1 + FILL_BUFFER)
+        entry_short_fill = entry_short * (1 + FILL_BUFFER)
+        tp_short_fill = tp_short * (1 - FILL_BUFFER)
+
         long_active = False; short_active = False
         salida_l = None; salida_s = None
         exit_idx_l = i; exit_idx_s = i
@@ -110,31 +118,31 @@ def run_realworld_backtest(df, start_idx, end_idx, initial_capital, params):
             curr_h = high[i+j]; curr_l = low[i+j]; curr_c = close[i+j]
             
             if not long_active:
-                if curr_l <= entry_long:
+                if curr_l <= entry_long_fill:
                     long_active = True
-                    if curr_h >= tp_long and curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
+                    if curr_h >= tp_long_fill and curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
                     elif curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
-                    elif curr_h >= tp_long: salida_l = tp_long; exit_idx_l = i+j
+                    elif curr_h >= tp_long_fill: salida_l = tp_long; exit_idx_l = i+j
             else:
                 if salida_l is None:
-                    if curr_h >= tp_long and curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
+                    if curr_h >= tp_long_fill and curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
                     elif curr_l <= sl_long: salida_l = sl_long; exit_idx_l = i+j
-                    elif curr_h >= tp_long: salida_l = tp_long; exit_idx_l = i+j
+                    elif curr_h >= tp_long_fill: salida_l = tp_long; exit_idx_l = i+j
                     elif j == 20:
                         if curr_c <= ema20[i+j]: salida_l = curr_c; exit_idx_l = i+j
                     elif j == 40: salida_l = curr_c; exit_idx_l = i+j
                         
             if not short_active:
-                if curr_h >= entry_short:
+                if curr_h >= entry_short_fill:
                     short_active = True
-                    if curr_l <= tp_short and curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
+                    if curr_l <= tp_short_fill and curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
                     elif curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
-                    elif curr_l <= tp_short: salida_s = tp_short; exit_idx_s = i+j
+                    elif curr_l <= tp_short_fill: salida_s = tp_short; exit_idx_s = i+j
             else:
                 if salida_s is None:
-                    if curr_l <= tp_short and curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
+                    if curr_l <= tp_short_fill and curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
                     elif curr_h >= sl_short: salida_s = sl_short; exit_idx_s = i+j
-                    elif curr_l <= tp_short: salida_s = tp_short; exit_idx_s = i+j
+                    elif curr_l <= tp_short_fill: salida_s = tp_short; exit_idx_s = i+j
                     elif j == 20:
                         if curr_c >= ema20[i+j]: salida_s = curr_c; exit_idx_s = i+j
                     elif j == 40: salida_s = curr_c; exit_idx_s = i+j
@@ -174,12 +182,20 @@ def run_optimization_for_sym(sym):
     df = prepare_data(df_raw)
     
     CANDLES_PER_DAY = 96
-    TOTAL_DAYS = 20
-    TRAIN_DAYS = 3 
+    TOTAL_DAYS = int(os.getenv('BT_TOTAL_DAYS', '20'))
+    TRAIN_DAYS = int(os.getenv('BT_TRAIN_DAYS', '3'))
     MAX_RISK = 0.20
-    
+
+    # Desplaza el final de la historia hacia atras N dias, para evaluar la misma
+    # ventana de 20 dias corridos pero en un periodo pasado distinto (chequeo de sesgo temporal).
+    offset_days = int(os.getenv('BT_OFFSET_DAYS', '0'))
+    if offset_days > 0:
+        cut = offset_days * CANDLES_PER_DAY
+        if cut < len(df):
+            df = df.iloc[:-cut]
+
     n_total = len(df)
-    total_capital = 250.0
+    total_capital = float(os.getenv('BT_START_CAPITAL', '250.0'))
     all_oos_updates = []
     
     for day_offset in range(TOTAL_DAYS, 0, -1):
@@ -199,7 +215,7 @@ def run_optimization_for_sym(sym):
                 'sl_mult_s': trial.suggest_float('sl_mult_s', 1.0, 4.0),
                 'risk_pct': trial.suggest_float('risk_pct', MAX_RISK*0.5, MAX_RISK)
             }
-            cap, _, t_count = run_realworld_backtest(df, train_start, test_start, 250.0, params)
+            cap, _, t_count = run_realworld_backtest(df, train_start, test_start, total_capital, params)
             if t_count < 3: return -1000 
             return cap
             
@@ -250,7 +266,9 @@ def run_optimization_for_sym(sym):
     plt.savefig(f"{artifact_dir}/wfo_20d_{sym.replace('/','_')}.png", dpi=100, bbox_inches='tight')
 
 def main():
-    for sym in ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']:
+    single_symbol = os.getenv('BT_SYMBOL')
+    symbols = [single_symbol] if single_symbol else ['BTC/USDT', 'ETH/USDT', 'SOL/USDT']
+    for sym in symbols:
         run_optimization_for_sym(sym)
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import os
+import json
 import logging
 import asyncio
 from datetime import datetime, timezone
@@ -13,6 +14,7 @@ TELEGRAM_BOT_API = os.getenv("TELEGRAM_BOT_API", "")
 TELEGRAM_ID = os.getenv("TELEGRAM_ID", "")
 API_URL = "http://127.0.0.1:8000"
 BOT_LEVERAGE = os.getenv("BOT_LEVERAGE", "3")  # etiqueta informativa en /portafolio
+DAILY_BASELINE_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "telegram_daily_baseline.json")
 
 # --- MONITOR DE POSICIONES ---
 POSITIONS_POLL_SECONDS = 30
@@ -251,6 +253,7 @@ async def post_init(app):
     app.create_task(watchdog_loop(app))
     app.create_task(watch_positions_loop(app))
     await app.bot.set_my_commands([
+        ("resumen", "Resumen rápido: PnL del día y órdenes abiertas"),
         ("start", "Inicia el bot y verifica seguridad"),
         ("status", "Salud del sistema y microservicios"),
         ("portafolio", "Resumen financiero, balance y patrimonio"),
@@ -261,7 +264,72 @@ async def post_init(app):
         ("help", "Guía y menú de comandos")
     ])
 
+def _get_daily_baseline(current_equity: float) -> float:
+    """Patrimonio de referencia al inicio del dia (UTC). Si cambio el dia, se reinicia
+    al patrimonio actual (el PnL del dia arranca en 0 para el nuevo dia)."""
+    today = datetime.now(timezone.utc).strftime("%Y-%m-%d")
+    try:
+        if os.path.exists(DAILY_BASELINE_FILE):
+            with open(DAILY_BASELINE_FILE, "r") as f:
+                data = json.load(f)
+            if data.get("date") == today:
+                return data.get("equity", current_equity)
+    except Exception:
+        pass
+    try:
+        os.makedirs(os.path.dirname(DAILY_BASELINE_FILE), exist_ok=True)
+        with open(DAILY_BASELINE_FILE, "w") as f:
+            json.dump({"date": today, "equity": current_equity}, f)
+    except Exception:
+        pass
+    return current_equity
+
 # --- COMANDOS DEL BOT ---
+async def resumen(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    if not is_authorized(update):
+        await update.message.reply_text("⛔ No estás autorizado")
+        return
+
+    await update.message.reply_chat_action(action="typing")
+    status_data = await fetch_api("/status")
+    orders_data = await fetch_api("/orders")
+
+    if status_data.get("status") != "success":
+        await update.message.reply_text(
+            f"⚠️ <b>Error al consultar resumen:</b>\n{status_data.get('message', 'Desconocido')}",
+            parse_mode="HTML")
+        return
+
+    bot_data = status_data["data"]
+    balance = bot_data.get("balance", 0.0)
+    open_pos = bot_data.get("open_positions", {})
+    total_upnl = sum(
+        d_info.get("unrealized_pnl", 0.0)
+        for directions in open_pos.values()
+        for d_name, d_info in directions.items() if d_name in ["LONG", "SHORT"]
+    )
+    equity = balance + total_upnl
+    baseline = _get_daily_baseline(equity)
+    day_pnl = equity - baseline
+    day_pnl_pct = (day_pnl / baseline * 100) if baseline > 0 else 0.0
+    pnl_icon = "📈" if day_pnl >= 0 else "📉"
+
+    orders_by_symbol = {}
+    if orders_data.get("status") == "success":
+        for o in orders_data.get("orders", []):
+            sym = o["symbol"]
+            orders_by_symbol[sym] = orders_by_symbol.get(sym, 0) + 1
+    orders_txt = "\n".join(f"  • <b>{s}</b>: {n}" for s, n in sorted(orders_by_symbol.items())) \
+        or "  • Sin órdenes abiertas"
+
+    msg = (
+        "📌 <b>Resumen del Día</b>\n\n"
+        f"{pnl_icon} PnL hoy: <b>{day_pnl_pct:+.2f}%</b> (<code>${day_pnl:+,.2f}</code>)\n"
+        f"💰 Patrimonio: <b>${equity:,.2f}</b>\n\n"
+        f"📋 Órdenes abiertas:\n{orders_txt}"
+    )
+    await update.message.reply_text(msg, parse_mode="HTML")
+
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     if not is_authorized(update):
         await update.message.reply_text("⛔ No estás autorizado")
@@ -271,6 +339,7 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         "🤖 <b>Cripto Trading Assist v2.0</b>\n"
         "⚡ <i>Asistente Cuantitativo de Monitoreo en Tiempo Real</i>\n\n"
         "<b>Comandos Especializados:</b>\n"
+        "📌 /resumen — PnL del día y órdenes abiertas (rápido)\n"
         "🟢 /status — Salud de servicios y seguridad\n"
         "💰 /portafolio — Balance, margen libre y patrimonio\n"
         "🎯 /posiciones — Operaciones abiertas en vivo\n"
@@ -288,6 +357,8 @@ async def help_cmd(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     help_msg = (
         "ℹ️ <b>Sitemap de Comandos Especializados</b>\n\n"
+        "📌 <b>/resumen</b>\n"
+        "Vistazo rapido: PnL del dia (% y $) y cantidad de ordenes abiertas por simbolo. Pensado para consultar en segundos, sin el detalle de /portafolio.\n\n"
         "🟢 <b>/status</b>\n"
         "Monitoreo operativo: estado de microservicios (API, Telegram, Bot), tiempo de actividad y nivel de riesgo configurado.\n\n"
         "💰 <b>/portafolio</b>\n"
@@ -622,6 +693,7 @@ def main():
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CommandHandler("help", help_cmd))
     app.add_handler(CommandHandler("status", status))
+    app.add_handler(CommandHandler("resumen", resumen))
     app.add_handler(CommandHandler("portafolio", portafolio))
     app.add_handler(CommandHandler("posiciones", posiciones))
     app.add_handler(CommandHandler("grid", grid))
